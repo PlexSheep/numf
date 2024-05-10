@@ -54,14 +54,13 @@ impl Format {
 #[clap(author, version, about, long_about = None)]
 #[clap(group(
             ArgGroup::new("format")
-                .required(true)
                 .args(&["hex", "bin", "oct", "dec"]),
         ))]
 struct Cli {
     #[arg(short, long)]
     /// add a prefix (like "0x" for hex)
     prefix: bool,
-    #[arg(short = 'x', long)]
+    #[arg(short = 'x', long, default_value_t = true)]
     /// format to hexadecimal
     hex: bool,
     #[arg(short, long)]
@@ -88,17 +87,16 @@ impl Cli {
             Format::Bin
         } else if self.dec {
             Format::Dec
-        } else {
+        } else if self.hex {
             Format::Hex
+        } else {
+            unreachable!()
         }
     }
 }
 
 fn main() {
-    match formatter() {
-        Ok(_) => (),
-        Err(_err) => usage(),
-    }
+    let _ = formatter();
 }
 
 fn formatter() -> anyhow::Result<()> {
@@ -114,27 +112,4 @@ fn formatter() -> anyhow::Result<()> {
     }
 
     Ok(())
-}
-
-fn help() {
-    let help: String = format!(
-        r##"numf {}
-
-    -h, --help      print this help
-    -p, --prefix    print a prefix before the formatted number
-    -b, --binary    format to binary
-    -o, --octal     format to octal
-    -x, --hex       format to hex (default)
-
-    Author: Christoph J. Scherr 2024
-    "##,
-        env!("CARGO_PKG_VERSION")
-    );
-    println!("{help}");
-    exit(1);
-}
-
-fn usage() {
-    println!("Usage: numf -hpbox NUMBER\n");
-    exit(1);
 }

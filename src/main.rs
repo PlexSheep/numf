@@ -5,9 +5,8 @@
 
 use clap::{ArgGroup, Parser};
 use clap_num::maybe_hex;
-use std::process::exit;
 
-pub type Num = usize;
+pub type Num = u128;
 
 #[derive(Copy, Clone, Debug)]
 enum Format {

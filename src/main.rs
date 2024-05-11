@@ -6,48 +6,8 @@
 use clap::{ArgGroup, Parser};
 use clap_num::maybe_hex;
 
-pub type Num = u128;
-
-#[derive(Copy, Clone, Debug)]
-enum Format {
-    Dec,
-    Hex,
-    Bin,
-    Octal,
-}
-
-impl Format {
-    fn prefix(&self) -> String {
-        match self {
-            Format::Dec => "0d",
-            Format::Hex => "0x",
-            Format::Bin => "0b",
-            Format::Octal => "0o",
-        }
-        .to_string()
-    }
-    fn format(&self, num: Num, prefix: bool) -> String {
-        let mut buf = String::new();
-        if prefix {
-            buf += &self.prefix();
-        }
-        match self {
-            Format::Hex => {
-                buf += &format!("{num:X}");
-            }
-            Format::Bin => {
-                buf += &format!("{num:b}");
-            }
-            Format::Octal => {
-                buf += &format!("{num:o}");
-            }
-            Format::Dec => {
-                buf += &format!("{num}");
-            }
-        }
-        buf
-    }
-}
+mod format;
+use format::*;
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
@@ -95,10 +55,6 @@ impl Cli {
 }
 
 fn main() {
-    let _ = formatter();
-}
-
-fn formatter() -> anyhow::Result<()> {
     let cli = Cli::parse();
 
     let mut out: Vec<String> = Vec::new();
@@ -109,6 +65,5 @@ fn formatter() -> anyhow::Result<()> {
     for o in out {
         println!("{o}")
     }
-
-    Ok(())
 }
+

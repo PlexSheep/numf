@@ -31,7 +31,7 @@ struct Cli {
     #[arg(short, long)]
     /// format to octal
     oct: bool,
-    #[clap(value_parser=maybe_hex::<Num>)]
+    #[clap(value_parser=maybe_hex::<Num>, required=true)]
     /// at least one number that should be formatted
     ///
     /// supports either base 10 or base 16 inputs (with 0xaaaa)

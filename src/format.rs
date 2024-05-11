@@ -1,4 +1,4 @@
-use base64::prelude::*;
+use fast32;
 
 pub type Num = u128;
 
@@ -9,6 +9,7 @@ pub enum Format {
     Bin,
     Octal,
     Base64,
+    Base32,
 }
 
 impl Format {
@@ -25,6 +26,8 @@ impl Format {
             Format::Octal => "0o",
             // perl and a few other programs seem to use this too
             Format::Base64 => "0s",
+            // no idea, I made this up
+            Format::Base32 => "032s",
         }
         .to_string()
     }
@@ -46,7 +49,8 @@ impl Format {
             Format::Dec => {
                 buf += &format!("{num}");
             }
-            Format::Base64 => buf += &BASE64_STANDARD.encode(u128_to_u8_slice(num)),
+            Format::Base64 => buf += &fast32::base64::RFC4648.encode(&u128_to_u8_slice(num)),
+            Format::Base32 => buf += &fast32::base32::RFC4648.encode(&u128_to_u8_slice(num)),
         }
         buf
     }

@@ -1,5 +1,3 @@
-use fast32;
-
 pub type Num = u128;
 
 #[derive(Copy, Clone, Debug)]

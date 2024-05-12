@@ -13,7 +13,7 @@ use format::*;
 #[clap(author, version, about, long_about = None)]
 #[clap(group(
             ArgGroup::new("format")
-                .args(&["hex", "bin", "oct", "dec"]),
+                .args(&["hex", "bin", "oct", "dec", "base64", "base32"]),
         ))]
 struct Cli {
     #[arg(short, long)]
@@ -31,6 +31,12 @@ struct Cli {
     #[arg(short, long)]
     /// format to octal
     oct: bool,
+    #[arg(short = 's', long)]
+    /// format to base64
+    base64: bool,
+    #[arg(short = 'z', long)]
+    /// format to base32
+    base32: bool,
     #[clap(value_parser=maybe_hex::<Num>, required=true)]
     /// at least one number that should be formatted
     ///
@@ -46,6 +52,10 @@ impl Cli {
             Format::Bin
         } else if self.dec {
             Format::Dec
+        } else if self.base64 {
+            Format::Base64
+        } else if self.base32 {
+            Format::Base32
         } else if self.hex {
             Format::Hex
         } else {

@@ -188,3 +188,14 @@ fn format_padded_prefix() {
         "0sQUFBQUFBQUE="
     );
 }
+
+
+#[test]
+fn set_format_checker() {
+    let mut options = FormatOptions::default();
+    assert_eq!(options.format(), Format::Hex);
+    options.set_format(Format::Base32);
+    assert_eq!(options.format(), Format::Base32);
+    options.set_format(Format::Base64);
+    assert_eq!(options.format(), Format::Base64);
+}

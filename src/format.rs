@@ -6,7 +6,7 @@ use libpt::bintols::split;
 pub type Num = u128;
 
 /// formats supported by numf
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Hash, PartialEq, Eq)]
 pub enum Format {
     Dec,
     Hex,

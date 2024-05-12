@@ -123,6 +123,11 @@ impl FormatOptions {
         self.numbers = numbers;
     }
 
+    /// set padding manually
+    pub fn set_padding(&mut self, value: bool) {
+        self.padding = value
+    }
+
     /// get padding
     pub fn padding(&self) -> bool {
         self.padding
@@ -131,6 +136,11 @@ impl FormatOptions {
     /// get prefix
     pub fn prefix(&self) -> bool {
         self.prefix
+    }
+
+    /// set prefix manually
+    pub fn set_prefix(&mut self, value: bool) {
+        self.prefix = value;
     }
 }
 

@@ -32,6 +32,12 @@ struct Cli {
     #[arg(short, long)]
     /// add a prefix (like "0x" for hex)
     prefix: bool,
+    #[arg(short = 'P', long)]
+    /// add a padding to make the number at least one byte long
+    ///
+    /// For example, `0b1100` will be `0b00001100` with this.
+    /// This does not apply to all formats, only hexadecimal and binary.
+    padding: bool,
     #[arg(short = 'x', long, default_value_t = true)]
     /// format to hexadecimal
     hex: bool,
@@ -79,11 +85,14 @@ impl Cli {
 
 fn main() {
     let cli = Cli::parse();
+    let options: FormatOptions = FormatOptions::default()
+        .padding(cli.padding)
+        .prefix(cli.prefix);
 
     let mut out: Vec<String> = Vec::new();
 
     for num in &cli.numbers {
-        out.push(cli.format().format(*num, cli.prefix));
+        out.push(cli.format().format(*num, options));
     }
     for o in out {
         println!("{o}")

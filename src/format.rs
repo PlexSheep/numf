@@ -2,6 +2,7 @@ use libpt::bintols::split;
 
 pub type Num = u128;
 
+/// formats supported by numf
 #[derive(Copy, Clone, Debug)]
 pub enum Format {
     Dec,
@@ -10,6 +11,32 @@ pub enum Format {
     Octal,
     Base64,
     Base32,
+}
+
+/// Options to use when formatting a number
+///
+/// Used by [Format::format].
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub struct FormatOptions {
+    /// add a prefix to the formatted number, such as `0x` for hex
+    prefix: bool,
+    /// fill the formatted number with zeros (or the equivalent) to make a whole byte
+    padding: bool,
+}
+
+impl FormatOptions {
+    /// set prefix
+    pub fn prefix(mut self, value: bool) -> Self {
+        self.prefix = value;
+        self
+    }
+    /// set padding
+    ///
+    /// Does not apply to all formats
+    pub fn padding(mut self, value: bool) -> Self {
+        self.padding = value;
+        self
+    }
 }
 
 impl Format {
@@ -31,17 +58,27 @@ impl Format {
         }
         .to_string()
     }
-    pub fn format(&self, num: Num, prefix: bool) -> String {
+    pub fn format(&self, num: Num, options: FormatOptions) -> String {
         let mut buf = String::new();
-        if prefix {
+        if options.prefix {
             buf += &self.prefix();
         }
         match self {
             Format::Hex => {
-                buf += &format!("{num:X}");
+                if options.padding {
+                    let tmp = &format!("{num:X}");
+                    buf += &("0".repeat((2 - tmp.len() % 2) % 2) + tmp);
+                } else {
+                    buf += &format!("{num:X}");
+                }
             }
             Format::Bin => {
-                buf += &format!("{num:b}");
+                if options.padding {
+                    let tmp = &format!("{num:b}");
+                    buf += &("0".repeat((8 - tmp.len() % 8) % 8) + tmp);
+                } else {
+                    buf += &format!("{num:b}");
+                }
             }
             Format::Octal => {
                 buf += &format!("{num:o}");

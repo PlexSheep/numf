@@ -11,6 +11,20 @@ use format::*;
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
+#[command(
+    author,
+    version,
+    about,
+    long_about,
+    help_template = r#"{about-section}
+{usage-heading} {usage}
+{all-args}{tab}
+
+{name}: {version}
+Author: {author-with-newline}
+"#
+)]
+
 #[clap(group(
             ArgGroup::new("format")
                 .args(&["hex", "bin", "oct", "dec", "base64", "base32"]),

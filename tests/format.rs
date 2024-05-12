@@ -137,3 +137,54 @@ fn format_prefix() {
         "0sQUFBQUFBQUE="
     );
 }
+
+#[test]
+fn format_padded_prefix() {
+    let mut options = FormatOptions::default();
+    options.set_prefix(true);
+    options.set_padding(true);
+
+    assert_eq!(Format::Dec.format(1337, &options), "0d1337");
+    assert_eq!(
+        Format::Dec.format(u128::MAX, &options),
+        format!("0d{}", u128::MAX)
+    );
+
+    assert_eq!(Format::Hex.format(0xFFF, &options), "0x0FFF");
+    assert_eq!(Format::Hex.format(0xFFFF, &options), "0xFFFF");
+    assert_eq!(
+        Format::Hex.format(u128::MAX, &options),
+        format!("0x{:X}", u128::MAX)
+    );
+
+    assert_eq!(
+        Format::Bin.format(0b11110000_00001111, &options),
+        "0b1111000000001111"
+    );
+    assert_eq!(
+        Format::Bin.format(0b110000_00001111, &options),
+        "0b0011000000001111"
+    );
+    assert_eq!(
+        Format::Bin.format(u128::MAX, &options),
+        format!("0b{:b}", u128::MAX)
+    );
+
+    assert_eq!(Format::Octal.format(0o13377331, &options), "0o13377331");
+    assert_eq!(
+        Format::Octal.format(u128::MAX, &options),
+        format!("0o{:o}", u128::MAX)
+    );
+
+    assert_eq!(Format::Base32.format(0x41414242, &options), "032sIFAUEQQ=");
+    assert_eq!(
+        Format::Base32.format(0x4141414141414141, &options),
+        "032sIFAUCQKBIFAUC==="
+    );
+
+    assert_eq!(Format::Base64.format(0x41414242, &options), "0sQUFCQg==");
+    assert_eq!(
+        Format::Base64.format(0x4141414141414141, &options),
+        "0sQUFBQUFBQUE="
+    );
+}

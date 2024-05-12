@@ -9,7 +9,8 @@ description = "Convert numbes between formats"
 readme = "README.md"
 homepage = "https://git.cscherr.de/PlexSheep/numf"
 repository = "https://git.cscherr.de/PlexSheep/numf"
-keywords = ["cli"]
+keywords = ["cli", "formatting"]
+categories = ["command-line-utilities", "encoding"]
 
 
 [dependencies]

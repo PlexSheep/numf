@@ -1,3 +1,5 @@
+use libpt::bintols::split;
+
 pub type Num = u128;
 
 #[derive(Copy, Clone, Debug)]
@@ -47,21 +49,9 @@ impl Format {
             Format::Dec => {
                 buf += &format!("{num}");
             }
-            Format::Base64 => buf += &fast32::base64::RFC4648.encode(&u128_to_u8_slice(num)),
-            Format::Base32 => buf += &fast32::base32::RFC4648.encode(&u128_to_u8_slice(num)),
+            Format::Base64 => buf += &fast32::base64::RFC4648.encode(&split::unsigned_to_vec(num)),
+            Format::Base32 => buf += &fast32::base32::RFC4648.encode(&split::unsigned_to_vec(num)),
         }
         buf
     }
-}
-
-fn u128_to_u8_slice(mut num: u128) -> Vec<u8> {
-    if num == 0 {
-        return vec![0];
-    }
-    let mut buf: Vec<u8> = Vec::new();
-    while num > 0 {
-        buf.push(num as u8);
-        num >>= 8;
-    }
-    buf
 }

@@ -24,7 +24,6 @@ use format::*;
 Author: {author-with-newline}
 "#
 )]
-
 #[clap(group(
             ArgGroup::new("format")
                 .args(&["hex", "bin", "oct", "dec", "base64", "base32"]),

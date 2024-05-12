@@ -21,7 +21,7 @@ pub enum Format {
 /// Use [Self::default] to get a basic variant or create a object yourself.
 ///
 /// This struct can be parsed with [clap] derive.
-#[derive(Parser, Debug)]
+#[derive(Parser, Debug, Clone, PartialEq, Eq, Hash)]
 #[clap(author, version, about, long_about = None)]
 #[command(
     author,

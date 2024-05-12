@@ -189,7 +189,6 @@ fn format_padded_prefix() {
     );
 }
 
-
 #[test]
 fn set_format_checker() {
     let mut options = FormatOptions::default();

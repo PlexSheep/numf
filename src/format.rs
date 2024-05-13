@@ -68,10 +68,21 @@ pub struct FormatOptions {
     #[arg(short = 'z', long)]
     /// format to base32
     base32: bool,
-    #[clap(value_parser=numf_parser::<NumberType>, required=true)]
+    #[clap(value_parser=numf_parser::<NumberType>, required=false)]
     /// at least one number that should be formatted
     ///
-    /// supports either base 10 or base 16 inputs (with 0xaaaa)
+    /// Any of the [Formats](Format::format) are supported, but the prefixes are needed for formats
+    /// other than decimal.
+    ///
+    /// Formats:
+    ///
+    /// - '0x' - Hexadecimal
+    /// - '0b' - Binary
+    /// - '0o' - Octal
+    /// - '0s' - Base64
+    /// - '032s' - Base32
+    ///
+    /// The numbers may be left empty at first, if numbers are provided with the stdin.
     numbers: Vec<NumberType>,
 }
 
@@ -141,6 +152,11 @@ impl FormatOptions {
     /// set prefix manually
     pub fn set_prefix(&mut self, value: bool) {
         self.prefix = value;
+    }
+
+    /// manually add a number
+    pub fn push_number(&mut self, value: NumberType) {
+        self.numbers.push(value)
     }
 }
 

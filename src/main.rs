@@ -6,16 +6,15 @@
 use std::io::Read;
 use std::process::exit;
 
-use clap::Parser;
+use clap::{CommandFactory, Parser};
 
 mod format;
 use format::*;
+use numf::format::numf_parser;
 
 fn main() {
     // try to read from stdin first, appending the numbers we read to the FormatOptions
-    let mut args: Vec<String> = std::env::args_os()
-        .map(|x| x.into_string().unwrap())
-        .collect();
+    let mut options = FormatOptions::parse();
     let mut stdin_nums = Vec::new();
     match std::io::stdin().lock().read_to_end(&mut stdin_nums) {
         Ok(_) => {
@@ -28,7 +27,14 @@ fn main() {
             };
             let split = whole.split_whitespace();
             for s in split {
-                args.push(s.to_string());
+                let number = match numf_parser(s) {
+                    Ok(n) => n,
+                    Err(e) => {
+                        eprintln!("could not parse number from stdin: {e:#?}");
+                        exit(2);
+                    }
+                };
+                options.push_number(number)
             }
         }
         Err(e) => {
@@ -37,7 +43,10 @@ fn main() {
         }
     };
 
-    let options = FormatOptions::parse_from(args);
+    if options.numbers().is_empty() {
+        format!("{}", FormatOptions::command().render_usage());
+        exit(1);
+    }
 
     let mut out: Vec<String> = Vec::new();
 

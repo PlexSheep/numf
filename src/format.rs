@@ -2,7 +2,6 @@
 use anyhow::anyhow;
 use clap::{ArgGroup, Parser};
 use libpt::bintols::{join, split};
-use num::traits::Pow;
 
 pub type NumberType = u128;
 

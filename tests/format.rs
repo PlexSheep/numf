@@ -201,32 +201,41 @@ fn set_format_checker() {
 
 #[test]
 fn parser_dec() {
-    assert_eq!(numf_parser("1337").unwrap(), 1337);
-    assert_eq!(numf_parser("0d1337").unwrap(), 1337);
+    assert_eq!(numf_parser::<u32>("1337").unwrap(), 1337);
+    assert_eq!(numf_parser::<u32>("0d1337").unwrap(), 1337);
 }
 
 #[test]
 fn parser_bin() {
-    assert_eq!(numf_parser("0b11001").unwrap(), 0b11001);
-    assert_eq!(numf_parser("0b11001").unwrap(), 0b11001);
+    assert_eq!(numf_parser::<u32>("0b11001").unwrap(), 0b11001);
+    assert_eq!(numf_parser::<u32>("0b11001").unwrap(), 0b11001);
 }
 
 #[test]
 fn parser_hex() {
-    assert_eq!(numf_parser("0xdeadbeef").unwrap(), 0xdeadbeef);
+    assert_eq!(numf_parser::<u32>("0xdeadbeef").unwrap(), 0xdeadbeef);
 }
 
 #[test]
 fn parser_oct() {
-    assert_eq!(numf_parser("0o771171").unwrap(), 0o771171);
+    assert_eq!(numf_parser::<u32>("0o771171").unwrap(), 0o771171);
 }
 
 #[test]
 fn parser_b64() {
-    assert_eq!(numf_parser("0sQUFCQg==").unwrap(), 0x41414242);
+    assert_eq!(numf_parser::<u32>("0sQUFCQg==").unwrap(), 0x41414242);
 }
 
 #[test]
 fn parser_b32() {
-    assert_eq!(numf_parser("IFAUEQQ=").unwrap(), 0x41414242);
+    assert_eq!(numf_parser::<u32>("IFAUEQQ=").unwrap(), 0x41414242);
+}
+
+#[test]
+fn parser_generics() {
+    assert_eq!(numf_parser::<u8>("55").unwrap(), 55);
+    assert_eq!(numf_parser::<u16>("55").unwrap(), 55);
+    assert_eq!(numf_parser::<u32>("55").unwrap(), 55);
+    assert_eq!(numf_parser::<u64>("55").unwrap(), 55);
+    assert_eq!(numf_parser::<u128>("55").unwrap(), 55);
 }

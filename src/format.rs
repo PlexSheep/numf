@@ -1,9 +1,9 @@
 #![allow(dead_code)] // this is exported to lib.rs
+use anyhow::anyhow;
 use clap::{ArgGroup, Parser};
-use clap_num::maybe_hex;
-use libpt::bintols::split;
+use libpt::bintols::{join, split};
 
-pub type Num = u128;
+pub type NumberType = u128;
 
 /// formats supported by numf
 #[derive(Copy, Clone, Debug, Hash, PartialEq, Eq)]
@@ -68,11 +68,11 @@ pub struct FormatOptions {
     #[arg(short = 'z', long)]
     /// format to base32
     base32: bool,
-    #[clap(value_parser=maybe_hex::<Num>, required=true)]
+    #[clap(value_parser=numf_parser::<NumberType>, required=true)]
     /// at least one number that should be formatted
     ///
     /// supports either base 10 or base 16 inputs (with 0xaaaa)
-    numbers: Vec<Num>,
+    numbers: Vec<NumberType>,
 }
 
 impl FormatOptions {
@@ -119,7 +119,7 @@ impl FormatOptions {
     }
 
     /// set numbers manually
-    pub fn set_numbers(&mut self, numbers: Vec<Num>) {
+    pub fn set_numbers(&mut self, numbers: Vec<NumberType>) {
         self.numbers = numbers;
     }
 
@@ -161,6 +161,7 @@ impl Default for FormatOptions {
 }
 
 impl Format {
+    /// Get the perfix for that [Format]
     pub fn prefix(&self) -> String {
         match self {
             // apperently used nowhere, sometimes 0 is used as a prefix but I
@@ -179,14 +180,15 @@ impl Format {
         }
         .to_string()
     }
-    pub fn format(&self, num: Num, options: &FormatOptions) -> String {
+    /// format a number with a [Format] and [FormatOptions]
+    pub fn format(&self, num: NumberType, options: &FormatOptions) -> String {
         let mut buf = String::new();
-        if options.prefix {
+        if options.prefix() {
             buf += &self.prefix();
         }
         match self {
             Format::Hex => {
-                if options.padding {
+                if options.padding() {
                     let tmp = &format!("{num:X}");
                     buf += &("0".repeat((2 - tmp.len() % 2) % 2) + tmp);
                 } else {
@@ -194,22 +196,135 @@ impl Format {
                 }
             }
             Format::Bin => {
-                if options.padding {
+                if options.padding() {
                     let tmp = &format!("{num:b}");
                     buf += &("0".repeat((8 - tmp.len() % 8) % 8) + tmp);
                 } else {
                     buf += &format!("{num:b}");
                 }
             }
-            Format::Octal => {
-                buf += &format!("{num:o}");
-            }
-            Format::Dec => {
-                buf += &format!("{num}");
-            }
+            Format::Octal => buf += &format!("{num:o}"),
+            Format::Dec => buf += &format!("{num}"),
             Format::Base64 => buf += &fast32::base64::RFC4648.encode(&split::unsigned_to_vec(num)),
             Format::Base32 => buf += &fast32::base32::RFC4648.encode(&split::unsigned_to_vec(num)),
         }
         buf
+    }
+}
+
+/// Validates an unsigned integer value that can be one of [Format](format::Format).
+///
+/// The number is assumed to be base-10 by default, it is parsed as a different
+/// [Format](format::Format) if the number is prefixed with the [prefix](format::FormatOptions::prefix),
+/// case sensitive. So if the user inputs `0b1100` then this is parsed as
+/// [Binary](format::Format::Bin) and so on.
+///
+/// # Example
+///
+/// This allows base-10 addresses to be passed normally, or values formatted with any of the
+/// [Formats](format::Format) defined by this crate to be passed when prefixed with the respective
+/// prefix.
+///
+/// ```
+/// use clap::Parser;
+/// use numf::format::numf_parser;
+///
+/// #[derive(Parser)]
+/// struct Args {
+///     #[clap(short, long, value_parser=numf_parser::<u128>)]
+///     address: u128,
+/// }
+/// let args = Args::parse_from(&["", "-a", "0x10"]);
+/// assert_eq!(args.address, 16);
+/// ```
+pub fn numf_parser<T>(s: &str) -> anyhow::Result<T>
+where
+    T: std::str::FromStr + std::convert::TryFrom<u128>,
+    <T as std::str::FromStr>::Err: std::fmt::Display,
+    T: num::Num,
+    <T as num::Num>::FromStrRadixErr: std::fmt::Display,
+    <T as std::str::FromStr>::Err: std::fmt::Debug,
+    u128: std::convert::From<T>,
+    <T as std::str::FromStr>::Err: std::error::Error,
+    <T as std::convert::TryFrom<u128>>::Error: std::error::Error,
+    <T as std::convert::TryFrom<u128>>::Error: std::marker::Send,
+    <T as std::convert::TryFrom<u128>>::Error: std::marker::Sync,
+    <T as std::convert::TryFrom<u128>>::Error: 'static,
+{
+    if s.starts_with(&Format::Dec.prefix()) || s.parse::<T>().is_ok() {
+        let s = match s.strip_prefix(&Format::Dec.prefix()) {
+            Some(sr) => sr,
+            None => s,
+        };
+        match s.parse() {
+            Ok(r) => Ok(r),
+            Err(e) => {
+                let e = format!("{e}");
+                Err(anyhow!(e))
+            }
+        }
+    } else if s.starts_with(&Format::Hex.prefix()) {
+        let s = match s.strip_prefix(&Format::Hex.prefix()) {
+            Some(sr) => sr,
+            None => s,
+        };
+        match T::from_str_radix(s, 16) {
+            Ok(r) => Ok(r),
+            Err(e) => {
+                let e = format!("{e}");
+                Err(anyhow!(e))
+            }
+        }
+    } else if s.starts_with(&Format::Octal.prefix()) {
+        let s = match s.strip_prefix(&Format::Octal.prefix()) {
+            Some(sr) => sr,
+            None => s,
+        };
+        match T::from_str_radix(s, 8) {
+            Ok(r) => Ok(r),
+            Err(e) => {
+                let e = format!("{e}");
+                Err(anyhow!(e))
+            }
+        }
+    } else if s.starts_with(&Format::Bin.prefix()) {
+        let s = match s.strip_prefix(&Format::Bin.prefix()) {
+            Some(sr) => sr,
+            None => s,
+        };
+        match T::from_str_radix(s, 2) {
+            Ok(r) => Ok(r),
+            Err(e) => {
+                let e = format!("{e}");
+                Err(anyhow!(e))
+            }
+        }
+    } else if s.starts_with(&Format::Base64.prefix()) {
+        let s = match s.strip_prefix(&Format::Base64.prefix()) {
+            Some(sr) => sr,
+            None => s,
+        };
+        match fast32::base64::RFC4648.decode_str(s) {
+            Ok(r) => Ok(join::array_to_unsigned::<T>(&r)?),
+            Err(e) => {
+                let e = format!("{e}");
+                Err(anyhow!(e))
+            }
+        }
+    } else if s.starts_with(&Format::Base32.prefix()) {
+        let s = match s.strip_prefix(&Format::Base32.prefix()) {
+            Some(sr) => sr,
+            None => s,
+        };
+        match fast32::base32::RFC4648.decode_str(s) {
+            Ok(r) => Ok(join::array_to_unsigned::<T>(&r)?),
+            Err(e) => {
+                let e = format!("{e}");
+                Err(anyhow!(e))
+            }
+        }
+    } else {
+        let e = "could not determine the format of the value".to_string();
+        Err(anyhow!(e))
     }
 }

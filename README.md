@@ -8,6 +8,8 @@ Current formats are:
 - Binary
 - Octal
 - Decimal
+- Base32
+- Base64
 
 `numf` also has the option of prepending a prefix for each format, such as
 `0x` for hexadecimal.

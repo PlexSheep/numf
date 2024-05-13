@@ -228,7 +228,7 @@ fn parser_b64() {
 
 #[test]
 fn parser_b32() {
-    assert_eq!(numf_parser::<u32>("IFAUEQQ=").unwrap(), 0x41414242);
+    assert_eq!(numf_parser::<u32>("032sIFAUEQQ=").unwrap(), 0x41414242);
 }
 
 #[test]

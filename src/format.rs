@@ -217,7 +217,7 @@ impl Format {
 ///
 /// The number is assumed to be base-10 by default, it is parsed as a different
 /// [Format](format::Format) if the number is prefixed with the [prefix](format::FormatOptions::prefix),
-/// case insensitive. So if the user inputs `0b1100` then this is parsed as
+/// case sensitive. So if the user inputs `0b1100` then this is parsed as
 /// [Binary](format::Format::Bin) and so on.
 ///
 /// # Example

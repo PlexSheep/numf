@@ -306,18 +306,7 @@ where
             None => s,
         };
         match fast32::base64::RFC4648.decode_str(s) {
-            Ok(r) => {
-                if r.len() > 16 {
-                    panic!("boom");
-                }
-                let mut ri: u128 = 0;
-                for (i, e) in r.iter().rev().enumerate() {
-                    ri += (*e as u128) * 256.pow(i as u32) as u128;
-                }
-                dbg!(ri);
-                dbg!(format!("{ri:#x}"));
-                Ok(ri.to_string().parse().unwrap())
-            }
+            Ok(r) => Ok(join::array_to_unsigned::<T>(&r)?),
             Err(e) => {
                 let e = format!("{e}");
                 Err(anyhow!(e))

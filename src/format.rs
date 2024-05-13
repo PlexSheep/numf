@@ -228,12 +228,12 @@ impl Format {
 ///
 /// ```
 /// use clap::Parser;
-/// use numf::parser::numf_parser;
+/// use numf::format::numf_parser;
 ///
 /// #[derive(Parser)]
 /// struct Args {
-///     #[clap(short, long, value_parser=numf_parser::<u32>)]
-///     address: u32,
+///     #[clap(short, long, value_parser=numf_parser)]
+///     address: u128,
 /// }
 /// let args = Args::parse_from(&["", "-a", "0x10"]);
 /// assert_eq!(args.address, 16);

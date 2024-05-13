@@ -1,7 +1,7 @@
 #![allow(dead_code)] // this is exported to lib.rs
 use anyhow::anyhow;
 use clap::{ArgGroup, Parser};
-use libpt::bintols::split;
+use libpt::bintols::{join, split};
 use num::traits::Pow;
 
 pub type NumberType = u128;
@@ -240,11 +240,17 @@ impl Format {
 /// ```
 pub fn numf_parser<T>(s: &str) -> anyhow::Result<T>
 where
-    T: std::str::FromStr,
+    T: std::str::FromStr + std::convert::TryFrom<u128>,
     <T as std::str::FromStr>::Err: std::fmt::Display,
     T: num::Num,
     <T as num::Num>::FromStrRadixErr: std::fmt::Display,
     <T as std::str::FromStr>::Err: std::fmt::Debug,
+    u128: std::convert::From<T>,
+    <T as std::str::FromStr>::Err: std::error::Error,
+    <T as std::convert::TryFrom<u128>>::Error: std::error::Error,
+    <T as std::convert::TryFrom<u128>>::Error: std::marker::Send,
+    <T as std::convert::TryFrom<u128>>::Error: std::marker::Sync,
+    <T as std::convert::TryFrom<u128>>::Error: 'static,
 {
     if s.starts_with(&Format::Dec.prefix()) || s.parse::<T>().is_ok() {
         let s = match s.strip_prefix(&Format::Dec.prefix()) {
@@ -323,18 +329,7 @@ where
             None => s,
         };
         match fast32::base32::RFC4648.decode_str(s) {
-            Ok(r) => {
-                if r.len() > 16 {
-                    panic!("boom");
-                }
-                let mut ri: u128 = 0;
-                for (i, e) in r.iter().rev().enumerate() {
-                    ri += (*e as u128) * 256.pow(i as u32) as u128;
-                }
-                dbg!(ri);
-                dbg!(format!("{ri:#x}"));
-                Ok(ri.to_string().parse().unwrap())
-            }
+            Ok(r) => Ok(join::array_to_unsigned::<T>(&r)?),
             Err(e) => {
                 let e = format!("{e}");
                 Err(anyhow!(e))

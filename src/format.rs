@@ -76,13 +76,17 @@ pub struct FormatOptions {
     ///
     /// Formats:
     ///
-    /// - '0x' - Hexadecimal
-    /// - '0b' - Binary
-    /// - '0o' - Octal
-    /// - '0s' - Base64
-    /// - '032s' - Base32
+    /// * '0x' - Hexadecimal
     ///
-    /// The numbers may be left empty at first, if numbers are provided with the stdin.
+    /// * '0b' - Binary
+    ///
+    /// * '0o' - Octal
+    ///
+    /// * '0s' - Base64
+    ///
+    /// * '032s' - Base32
+    ///
+    /// The numbers may be left empty at first, if numbers are provided from the stdin.
     numbers: Vec<NumberType>,
 }
 

@@ -2,7 +2,7 @@
 use anyhow::anyhow;
 use clap::{ArgGroup, Parser};
 use libpt::bintols::split;
-use num;
+use num::traits::Pow;
 
 pub type NumberType = u128;
 
@@ -232,7 +232,7 @@ impl Format {
 ///
 /// #[derive(Parser)]
 /// struct Args {
-///     #[clap(short, long, value_parser=numf_parser)]
+///     #[clap(short, long, value_parser=numf_parser::<u128>)]
 ///     address: u128,
 /// }
 /// let args = Args::parse_from(&["", "-a", "0x10"]);
@@ -244,6 +244,7 @@ where
     <T as std::str::FromStr>::Err: std::fmt::Display,
     T: num::Num,
     <T as num::Num>::FromStrRadixErr: std::fmt::Display,
+    <T as std::str::FromStr>::Err: std::fmt::Debug,
 {
     if s.starts_with(&Format::Dec.prefix()) || s.parse::<T>().is_ok() {
         let s = match s.strip_prefix(&Format::Dec.prefix()) {
@@ -294,11 +295,51 @@ where
             }
         }
     } else if s.starts_with(&Format::Base64.prefix()) {
-        let e = "parsing of base64 is not yet implemented".to_string();
-        Err(anyhow!(e))
+        let s = match s.strip_prefix(&Format::Base64.prefix()) {
+            Some(sr) => sr,
+            None => s,
+        };
+        match fast32::base64::RFC4648.decode_str(s) {
+            Ok(r) => {
+                if r.len() > 16 {
+                    panic!("boom");
+                }
+                let mut ri: u128 = 0;
+                for (i, e) in r.iter().rev().enumerate() {
+                    ri += (*e as u128) * 256.pow(i as u32) as u128;
+                }
+                dbg!(ri);
+                dbg!(format!("{ri:#x}"));
+                Ok(ri.to_string().parse().unwrap())
+            }
+            Err(e) => {
+                let e = format!("{e}");
+                Err(anyhow!(e))
+            }
+        }
     } else if s.starts_with(&Format::Base32.prefix()) {
-        let e = "parsing of base32 is not yet implemented".to_string();
-        Err(anyhow!(e))
+        let s = match s.strip_prefix(&Format::Base32.prefix()) {
+            Some(sr) => sr,
+            None => s,
+        };
+        match fast32::base32::RFC4648.decode_str(s) {
+            Ok(r) => {
+                if r.len() > 16 {
+                    panic!("boom");
+                }
+                let mut ri: u128 = 0;
+                for (i, e) in r.iter().rev().enumerate() {
+                    ri += (*e as u128) * 256.pow(i as u32) as u128;
+                }
+                dbg!(ri);
+                dbg!(format!("{ri:#x}"));
+                Ok(ri.to_string().parse().unwrap())
+            }
+            Err(e) => {
+                let e = format!("{e}");
+                Err(anyhow!(e))
+            }
+        }
     } else {
         let e = "could not determine the format of the value".to_string();
         Err(anyhow!(e))

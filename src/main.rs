@@ -26,8 +26,8 @@ fn main() {
                     exit(1);
                 }
             };
-            let whole = whole.replace('\n', "");
-            for s in whole.split(' ') {
+            let split = whole.split_whitespace();
+            for s in split {
                 args.push(s.to_string());
             }
         }

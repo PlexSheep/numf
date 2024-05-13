@@ -1,8 +1,8 @@
-#![allow(dead_code)]
+#![allow(dead_code)] // this is exported to lib.rs
 use anyhow::anyhow;
-// this is exported to lib.rs
 use clap::{ArgGroup, Parser};
 use libpt::bintols::split;
+use num;
 
 pub type NumberType = u128;
 
@@ -69,7 +69,7 @@ pub struct FormatOptions {
     #[arg(short = 'z', long)]
     /// format to base32
     base32: bool,
-    #[clap(value_parser=numf_parser, required=true)]
+    #[clap(value_parser=numf_parser::<NumberType>, required=true)]
     /// at least one number that should be formatted
     ///
     /// supports either base 10 or base 16 inputs (with 0xaaaa)
@@ -238,8 +238,14 @@ impl Format {
 /// let args = Args::parse_from(&["", "-a", "0x10"]);
 /// assert_eq!(args.address, 16);
 /// ```
-pub fn numf_parser(s: &str) -> anyhow::Result<NumberType> {
-    if s.starts_with(&Format::Dec.prefix()) || s.parse::<NumberType>().is_ok() {
+pub fn numf_parser<T>(s: &str) -> anyhow::Result<T>
+where
+    T: std::str::FromStr,
+    <T as std::str::FromStr>::Err: std::fmt::Display,
+    T: num::Num,
+    <T as num::Num>::FromStrRadixErr: std::fmt::Display,
+{
+    if s.starts_with(&Format::Dec.prefix()) || s.parse::<T>().is_ok() {
         let s = match s.strip_prefix(&Format::Dec.prefix()) {
             Some(sr) => sr,
             None => s,
@@ -256,7 +262,7 @@ pub fn numf_parser(s: &str) -> anyhow::Result<NumberType> {
             Some(sr) => sr,
             None => s,
         };
-        match NumberType::from_str_radix(s, 16) {
+        match T::from_str_radix(s, 16) {
             Ok(r) => Ok(r),
             Err(e) => {
                 let e = format!("{e}");
@@ -268,7 +274,7 @@ pub fn numf_parser(s: &str) -> anyhow::Result<NumberType> {
             Some(sr) => sr,
             None => s,
         };
-        match NumberType::from_str_radix(s, 8) {
+        match T::from_str_radix(s, 8) {
             Ok(r) => Ok(r),
             Err(e) => {
                 let e = format!("{e}");
@@ -280,7 +286,7 @@ pub fn numf_parser(s: &str) -> anyhow::Result<NumberType> {
             Some(sr) => sr,
             None => s,
         };
-        match NumberType::from_str_radix(s, 2) {
+        match T::from_str_radix(s, 2) {
             Ok(r) => Ok(r),
             Err(e) => {
                 let e = format!("{e}");

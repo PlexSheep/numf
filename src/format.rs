@@ -69,20 +69,24 @@ pub struct FormatOptions {
     /// format to base32
     base32: bool,
     #[clap(value_parser=numf_parser::<NumberType>, required=false)]
-    /// at least one number that should be formatted
+    /// numbers that should be formatted
     ///
     /// Any of the [Formats](Format::format) are supported, but the prefixes are needed for formats
     /// other than decimal.
     ///
     /// Formats:
     ///
-    /// - '0x' - Hexadecimal
-    /// - '0b' - Binary
-    /// - '0o' - Octal
-    /// - '0s' - Base64
-    /// - '032s' - Base32
+    /// * '0x' - Hexadecimal
     ///
-    /// The numbers may be left empty at first, if numbers are provided with the stdin.
+    /// * '0b' - Binary
+    ///
+    /// * '0o' - Octal
+    ///
+    /// * '0s' - Base64
+    ///
+    /// * '032s' - Base32
+    ///
+    /// The numbers may be left empty at first, if numbers are provided from the stdin.
     numbers: Vec<NumberType>,
 }
 

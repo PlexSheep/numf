@@ -1,8 +1,29 @@
+//! This module implements the actual formatting in [numf](crate).
+//!
+//! You can use it in your own program to convert numbers to formats.
+//!
+//! # Example
+//!
+//! The following example shows how to use numf to format your integers.
+//!
+//! ```
+//! use numf::format::{Format, FormatOptions};
+//!
+//! let mut options = FormatOptions::default();
+//! options.set_prefix(true);
+//! options.set_padding(true);
+//!
+//! assert_eq!(Format::Hex.format(0x1337, &options), "0x1337");
+//! assert_eq!(Format::Base32.format(0x41414242, &options), "032sIFAUEQQ=");
+//! assert_eq!(Format::Base64.format(0x41414242, &options), "0sQUFCQg==");
+//! ```
+
 #![allow(dead_code)] // this is exported to lib.rs
 use anyhow::anyhow;
 use clap::{ArgGroup, Parser};
 use libpt::bintols::{join, split};
 
+/// The number type [numf](crate) uses
 pub type NumberType = u128;
 
 /// formats supported by numf

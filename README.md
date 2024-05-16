@@ -36,3 +36,12 @@ $ numf -xp 1337 505 0xaabb
 0x1F9
 0xAABB
 ```
+## Installing
+
+### Cargo
+
+`numf` is on [crates.io](https://crates.io).
+
+```
+cargo install numf
+```

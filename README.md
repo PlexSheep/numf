@@ -11,7 +11,7 @@
 * [GitHub Mirror](https://github.com/PlexSheep/numf)
 * [Codeberg Mirror](https://codeberg.org/PlexSheep/numf)
 * [crates.io](https://crates.io/crates/numf)
-* [docs.rs](https://docs.rs/crate/numf/)
+* [docs.rs](https://docs.rs/numf/latest/numf/)
 
 `numf` is a number formatter. It formats the numbers provided to it.
 

@@ -69,7 +69,7 @@ pub struct FormatOptions {
     /// format to base32
     base32: bool,
     #[clap(value_parser=numf_parser::<NumberType>, required=false)]
-    /// at least one number that should be formatted
+    /// numbers that should be formatted
     ///
     /// Any of the [Formats](Format::format) are supported, but the prefixes are needed for formats
     /// other than decimal.

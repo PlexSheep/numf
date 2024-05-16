@@ -24,7 +24,7 @@ Current formats are:
 - Base32
 - Base64
 
-`numf` also has the onumfion of prepending a prefix for each format, such as
+`numf` also has the option of prepending a prefix for each format, such as
 `0x` for hexadecimal. Numbers may also be provided from the stdin. See `--help`
 flag for more information.
 

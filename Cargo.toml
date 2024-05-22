@@ -19,4 +19,5 @@ clap = { version = "4.5.4", features = ["derive"] }
 fast32 = "1.0.2"
 libpt = { version = "0.5.1", features = ["bintols"], default-features = false }
 num = "0.4.3"
+rand = "0.8.5"
 

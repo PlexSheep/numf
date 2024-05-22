@@ -228,7 +228,7 @@ impl Default for FormatOptions {
             dec: false,
             numbers: vec![],
             rand: 0,
-            rand_max: NumberType::MAX
+            rand_max: NumberType::MAX,
         }
     }
 }

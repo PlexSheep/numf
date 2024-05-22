@@ -10,7 +10,7 @@ use clap::{CommandFactory, Parser};
 
 mod format;
 use format::*;
-use numf::format::{numf_parser, NumberType};
+use numf::format::numf_parser;
 
 fn main() -> anyhow::Result<()> {
     // try to read from stdin first, appending the numbers we read to the FormatOptions
@@ -53,10 +53,7 @@ fn main() -> anyhow::Result<()> {
         use rand::prelude::*;
         let mut rand = rand::rngs::OsRng;
         for _i in 0..options.rand() {
-            let mut by: [u8; 16] = [0; 16];
-            rand.fill_bytes(&mut by);
-            let n: NumberType = libpt::bintols::join::array_to_unsigned(&by)?;
-            options.push_number(n);
+            options.push_number(rand.gen_range(0..options.rand_max()));
         }
     }
 

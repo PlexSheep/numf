@@ -212,7 +212,7 @@ impl Default for FormatOptions {
             base64: false,
             dec: false,
             numbers: vec![],
-            rand: 0
+            rand: 0,
         }
     }
 }

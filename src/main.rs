@@ -1,8 +1,3 @@
-//! # numf
-//!
-//! This binary should just take any amount of numbers and print them out formatted to some other
-//! system.
-
 use std::io::{IsTerminal, Read};
 use std::process::exit;
 

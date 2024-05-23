@@ -12,6 +12,7 @@ fn main() -> anyhow::Result<()> {
     let mut options = FormatOptions::parse();
     let mut stdin_nums = Vec::new();
     let stdin = std::io::stdin();
+    // only accept numbers from stdin if the stdin is not an interactive terminal
     if !stdin.is_terminal() {
         match stdin.lock().read_to_end(&mut stdin_nums) {
             Ok(_) => {
@@ -44,6 +45,7 @@ fn main() -> anyhow::Result<()> {
         };
     }
 
+    // add random numbers to the number list, according to how many are requested
     if options.rand() > 0 {
         use rand::prelude::*;
         let mut rand = rand::rngs::OsRng;
@@ -52,6 +54,7 @@ fn main() -> anyhow::Result<()> {
         }
     }
 
+    // exit with error if no numbers are to be formatted
     if options.numbers().is_empty() {
         eprintln!("{}", FormatOptions::command().render_usage());
         eprintln!("no numbers have been provided");

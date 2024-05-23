@@ -86,6 +86,16 @@ pub struct FormatOptions {
     #[arg(short = 's', long)]
     /// format to base64
     base64: bool,
+    #[arg(short = 'r', long, default_value_t = 0, value_parser=numf_parser::<NumberType>)]
+    /// output random numbers
+    ///
+    /// Add a user defined amount of cryptographically pseudorandom numbers to the number list.
+    rand: NumberType,
+    #[arg(long, default_value_t = NumberType::MAX, value_parser=numf_parser::<NumberType>)]
+    /// max for the random numbers
+    ///
+    /// Generated numbers will not be lower than this. Only has an effect with --rand set.
+    rand_max: NumberType,
     #[arg(short = 'z', long)]
     /// format to base32
     base32: bool,
@@ -183,6 +193,26 @@ impl FormatOptions {
     pub fn push_number(&mut self, value: NumberType) {
         self.numbers.push(value)
     }
+
+    /// get rand
+    pub fn rand(&self) -> NumberType {
+        self.rand
+    }
+
+    /// set amount of extra random numbers manually
+    pub fn set_rand(&mut self, rand: NumberType) {
+        self.rand = rand;
+    }
+
+    /// get highes allowed random value
+    pub fn rand_max(&self) -> NumberType {
+        self.rand_max
+    }
+
+    /// set highes allowed random value
+    pub fn set_rand_max(&mut self, rand_max: NumberType) {
+        self.rand_max = rand_max;
+    }
 }
 
 impl Default for FormatOptions {
@@ -197,6 +227,8 @@ impl Default for FormatOptions {
             base64: false,
             dec: false,
             numbers: vec![],
+            rand: 0,
+            rand_max: NumberType::MAX,
         }
     }
 }

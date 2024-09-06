@@ -36,6 +36,27 @@ $ numf -xp 1337 505 0xaabb
 0x539
 0x1F9
 0xAABB
+$ numf -a 505 | hedxump -C
+00000000  01 f9                                             |..|
+00000002
+$ numf -a 505 | numf
+1F9
+$ numf -a 505 | numf -d
+505
+$ numf -a 505 | numf -b
+111111001
+$ echo -ne "\x20\xff\xb4" | numf -xpP
+0x20FFB4
+$ echo -ne "\x20\xff\xb4" | numf -d
+2162612
+$ base64='aGVsbG8gd29ybGQuCg==' ; echo "0s$base64" | numf -d
+8271117963529473544792763018762
+$ base64='aGVsbG8gd29ybGQuCg==' ; echo "0s$base64" | numf -s
+aGVsbG8gd29ybGQuCg==
+$ echo "0b100100101010" | numf -d
+2346
+$ echo "0b100100101010" | numf -bPp
+0b0000100100101010
 ```
 ## Installing
 

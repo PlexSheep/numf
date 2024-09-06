@@ -21,20 +21,25 @@
 //! assert_eq!(Format::Hex.format(0x1337, &options), vec![48, 120, 49, 51, 51, 55]);
 //! ```
 
-#![allow(dead_code)] // this is exported to lib.rs
+#![allow(dead_code)]
+use std::default;
+use std::fmt::Display;
+
+// this is exported to lib.rs
 use anyhow::anyhow;
 use clap::{ArgGroup, Parser};
 use libpt::bintols::{join, split};
 use libpt::cli::args::VerbosityLevel;
-use libpt::log::debug;
+use libpt::log::{debug, trace};
 
 /// The number type [numf](crate) uses
 pub type NumberType = u128;
 
 /// formats supported by numf
-#[derive(Copy, Clone, Debug, Hash, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, Hash, PartialEq, Eq, Default)]
 pub enum Format {
     Dec,
+    #[default]
     Hex,
     Bin,
     Octal,
@@ -42,6 +47,12 @@ pub enum Format {
     Base32,
     /// Write raw data to stdout, not text
     Raw,
+}
+
+impl Display for Format {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{self:?}")
+    }
 }
 
 /// Describes what the formatter should do
@@ -78,7 +89,7 @@ pub struct FormatOptions {
     /// For example, `0b1100` will be `0b00001100` with this.
     /// This does not apply to all formats, only hexadecimal and binary.
     padding: bool,
-    #[arg(short = 'x', long, default_value_t = true)]
+    #[arg(short = 'x', long)]
     /// format to hexadecimal
     hex: bool,
     #[arg(short, long)]
@@ -137,6 +148,7 @@ pub struct FormatOptions {
 impl FormatOptions {
     /// get the format that the user has configured
     pub fn format(&self) -> Format {
+        trace!("self.hex: {}", self.hex);
         if self.oct {
             Format::Octal
         } else if self.bin {
@@ -152,7 +164,9 @@ impl FormatOptions {
         } else if self.raw {
             Format::Raw
         } else {
-            unreachable!()
+            // none was explicitly selected
+            debug!("no mode was explicitly selected, going with the default");
+            Format::default()
         }
     }
 
@@ -238,7 +252,7 @@ impl Default for FormatOptions {
             padding: false,
             prefix: false,
             oct: false,
-            hex: true,
+            hex: false,
             bin: false,
             raw: false,
             base32: false,
@@ -283,6 +297,7 @@ impl Format {
 
     /// format a number with a [Format] and [FormatOptions]
     pub fn format(&self, num: NumberType, options: &FormatOptions) -> Vec<u8> {
+        debug!("formatting mode: {self}");
         let mut buf: Vec<u8> = Vec::new();
         if options.prefix() {
             buf.append(&mut self.prefix());
@@ -320,7 +335,11 @@ impl Format {
                     .as_bytes()
                     .to_owned(),
             ),
-            Format::Raw => buf.append(&mut split::unsigned_to_vec(num)),
+            // Format::Raw => buf.append(&mut split::unsigned_to_vec(num)),
+            Format::Raw => {
+                debug!("do the raw thing");
+                buf.append(&mut split::unsigned_to_vec(num))
+            }
         }
         buf
     }

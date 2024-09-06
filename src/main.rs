@@ -4,9 +4,9 @@ use std::process::exit;
 use clap::{CommandFactory, Parser};
 
 mod format;
+use crate::format::{numf_parser, Format};
 use format::*;
 use libpt::log::debug;
-use numf::format::numf_parser;
 
 fn main() -> anyhow::Result<()> {
     // try to read from stdin first, appending the numbers we read to the FormatOptions
@@ -79,7 +79,9 @@ fn main() -> anyhow::Result<()> {
     for o in out {
         let mut stdout = std::io::stdout();
         stdout.write_all(&o)?;
-        stdout.write_all(b"\n")?;
+        if options.format() != Format::Raw {
+            stdout.write_all(b"\n")?;
+        }
         stdout.flush()?;
     }
     Ok(())

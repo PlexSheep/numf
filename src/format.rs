@@ -26,7 +26,6 @@ use anyhow::anyhow;
 use clap::{ArgGroup, Parser};
 use libpt::bintols::{join, split};
 use libpt::cli::args::VerbosityLevel;
-use libpt::log::debug;
 
 /// The number type [numf](crate) uses
 pub type NumberType = u128;

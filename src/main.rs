@@ -2,6 +2,7 @@ use std::io::{IsTerminal, Read, Write};
 use std::process::exit;
 
 use clap::{CommandFactory, Parser};
+use numf::format::numf_parser_str;
 
 mod format;
 use crate::format::{numf_parser, Format};
@@ -26,17 +27,24 @@ fn main() -> anyhow::Result<()> {
     if !stdin.is_terminal() {
         match stdin.lock().read_to_end(&mut stdin_nums) {
             Ok(_) => {
-                let whole: String = match String::from_utf8(stdin_nums) {
+                let whole: String = match String::from_utf8(stdin_nums.clone()) {
                     Ok(r) => r,
-                    Err(e) => {
-                        eprintln!("{}", FormatOptions::command().render_usage());
-                        eprintln!("stdin for this program only accepts text: {e:#?}");
-                        exit(1);
+                    Err(_) => {
+                        let number = match numf_parser(&stdin_nums) {
+                            Ok(n) => n,
+                            Err(e) => {
+                                eprintln!("{}", FormatOptions::command().render_usage());
+                                eprintln!("could not parse number from stdin: {e:#?}");
+                                exit(2);
+                            }
+                        };
+                        options.push_number(number);
+                        String::new()
                     }
                 };
                 let split = whole.split_whitespace();
                 for s in split {
-                    let number = match numf_parser(s) {
+                    let number = match numf_parser_str(s) {
                         Ok(n) => n,
                         Err(e) => {
                             eprintln!("{}", FormatOptions::command().render_usage());

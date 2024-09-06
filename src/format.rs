@@ -116,12 +116,12 @@ pub struct FormatOptions {
     #[arg(short = 'a', long)]
     /// format raw, no text
     raw: bool,
-    #[arg(short = 'r', long, default_value_t = 0, value_parser=numf_parser::<NumberType>)]
+    #[arg(short = 'r', long, default_value_t = 0, value_parser=numf_parser_str::<NumberType>)]
     /// output random numbers
     ///
     /// Add a user defined amount of cryptographically pseudorandom numbers to the number list.
     rand: NumberType,
-    #[arg(long, default_value_t = NumberType::MAX, value_parser=numf_parser::<NumberType>)]
+    #[arg(long, default_value_t = NumberType::MAX, value_parser=numf_parser_str::<NumberType>)]
     /// max for the random numbers
     ///
     /// Generated numbers will not be lower than this. Only has an effect with --rand set.
@@ -129,7 +129,7 @@ pub struct FormatOptions {
     #[arg(short = 'z', long)]
     /// format to base32
     base32: bool,
-    #[clap(value_parser=numf_parser::<NumberType>, required=false)]
+    #[clap(value_parser=numf_parser_str::<NumberType>, required=false)]
     /// numbers that should be formatted
     ///
     /// Any of the [Formats](Format::format) are supported, but the prefixes are needed for formats
@@ -367,17 +367,17 @@ impl Format {
 ///
 /// ```
 /// use clap::Parser;
-/// use numf::format::numf_parser;
+/// use numf::format::numf_parser_str;
 ///
 /// #[derive(Parser)]
 /// struct Args {
-///     #[clap(short, long, value_parser=numf_parser::<u128>)]
+///     #[clap(short, long, value_parser=numf_parser_str::<u128>)]
 ///     address: u128,
 /// }
 /// let args = Args::parse_from(&["", "-a", "0x10"]);
 /// assert_eq!(args.address, 16);
 /// ```
-pub fn numf_parser<T>(s: &str) -> anyhow::Result<T>
+pub fn numf_parser_str<T>(s: &str) -> anyhow::Result<T>
 where
     T: std::str::FromStr + std::convert::TryFrom<u128>,
     <T as std::str::FromStr>::Err: std::fmt::Display,
@@ -391,10 +391,29 @@ where
     <T as std::convert::TryFrom<u128>>::Error: std::marker::Sync,
     <T as std::convert::TryFrom<u128>>::Error: 'static,
 {
-    if s.starts_with(&Format::Dec.prefix_str()) || s.parse::<T>().is_ok() {
-        let s = match s.strip_prefix(&Format::Dec.prefix_str()) {
+    numf_parser(s.as_bytes())
+}
+
+pub fn numf_parser<T>(data: &[u8]) -> anyhow::Result<T>
+where
+    T: std::str::FromStr + std::convert::TryFrom<u128>,
+    <T as std::str::FromStr>::Err: std::fmt::Display,
+    T: num::Num,
+    <T as num::Num>::FromStrRadixErr: std::fmt::Display,
+    <T as std::str::FromStr>::Err: std::fmt::Debug,
+    u128: std::convert::From<T>,
+    <T as std::str::FromStr>::Err: std::error::Error,
+    <T as std::convert::TryFrom<u128>>::Error: std::error::Error,
+    <T as std::convert::TryFrom<u128>>::Error: std::marker::Send,
+    <T as std::convert::TryFrom<u128>>::Error: std::marker::Sync,
+    <T as std::convert::TryFrom<u128>>::Error: 'static,
+{
+    let data_as_text = String::from_utf8_lossy(data).to_string();
+
+    if data_as_text.starts_with(&Format::Dec.prefix_str()) || data_as_text.parse::<T>().is_ok() {
+        let s = match data_as_text.strip_prefix(&Format::Dec.prefix_str()) {
             Some(sr) => sr,
-            None => s,
+            None => &data_as_text,
         };
         match s.parse() {
             Ok(r) => Ok(r),
@@ -403,10 +422,10 @@ where
                 Err(anyhow!(e))
             }
         }
-    } else if s.starts_with(&Format::Hex.prefix_str()) {
-        let s = match s.strip_prefix(&Format::Hex.prefix_str()) {
+    } else if data_as_text.starts_with(&Format::Hex.prefix_str()) {
+        let s = match data_as_text.strip_prefix(&Format::Hex.prefix_str()) {
             Some(sr) => sr,
-            None => s,
+            None => &data_as_text,
         };
         match T::from_str_radix(s, 16) {
             Ok(r) => Ok(r),
@@ -415,10 +434,10 @@ where
                 Err(anyhow!(e))
             }
         }
-    } else if s.starts_with(&Format::Octal.prefix_str()) {
-        let s = match s.strip_prefix(&Format::Octal.prefix_str()) {
+    } else if data_as_text.starts_with(&Format::Octal.prefix_str()) {
+        let s = match data_as_text.strip_prefix(&Format::Octal.prefix_str()) {
             Some(sr) => sr,
-            None => s,
+            None => &data_as_text,
         };
         match T::from_str_radix(s, 8) {
             Ok(r) => Ok(r),
@@ -427,10 +446,10 @@ where
                 Err(anyhow!(e))
             }
         }
-    } else if s.starts_with(&Format::Bin.prefix_str()) {
-        let s = match s.strip_prefix(&Format::Bin.prefix_str()) {
+    } else if data_as_text.starts_with(&Format::Bin.prefix_str()) {
+        let s = match data_as_text.strip_prefix(&Format::Bin.prefix_str()) {
             Some(sr) => sr,
-            None => s,
+            None => &data_as_text,
         };
         match T::from_str_radix(s, 2) {
             Ok(r) => Ok(r),
@@ -439,10 +458,10 @@ where
                 Err(anyhow!(e))
             }
         }
-    } else if s.starts_with(&Format::Base64.prefix_str()) {
-        let s = match s.strip_prefix(&Format::Base64.prefix_str()) {
+    } else if data_as_text.starts_with(&Format::Base64.prefix_str()) {
+        let s = match data_as_text.strip_prefix(&Format::Base64.prefix_str()) {
             Some(sr) => sr,
-            None => s,
+            None => &data_as_text,
         };
         match fast32::base64::RFC4648.decode_str(s) {
             Ok(r) => Ok(join::array_to_unsigned::<T>(&r)?),
@@ -451,10 +470,10 @@ where
                 Err(anyhow!(e))
             }
         }
-    } else if s.starts_with(&Format::Base32.prefix_str()) {
-        let s = match s.strip_prefix(&Format::Base32.prefix_str()) {
+    } else if data_as_text.starts_with(&Format::Base32.prefix_str()) {
+        let s = match data_as_text.strip_prefix(&Format::Base32.prefix_str()) {
             Some(sr) => sr,
-            None => s,
+            None => &data_as_text,
         };
         match fast32::base32::RFC4648.decode_str(s) {
             Ok(r) => Ok(join::array_to_unsigned::<T>(&r)?),
@@ -463,14 +482,13 @@ where
                 Err(anyhow!(e))
             }
         }
-    } else if s.starts_with(&Format::Raw.prefix_str()) {
-        let s = match s.strip_prefix(&Format::Raw.prefix_str()) {
-            Some(sr) => sr,
-            None => s,
-        };
-        Ok(join::array_to_unsigned(s.as_bytes())?)
     } else {
-        let e = "could not determine the format of the value".to_string();
-        Err(anyhow!(e))
+        // what could go wrong with interpreting everything else as raw number input
+        let s: Vec<u8> = if data.len() > 2 && data[0] == 0x00 {
+            data.iter().skip(1).map(ToOwned::to_owned).collect()
+        } else {
+            data.as_ref().to_vec()
+        };
+        Ok(join::array_to_unsigned(&s)?)
     }
 }

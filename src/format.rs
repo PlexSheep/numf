@@ -17,8 +17,18 @@
 //! assert_eq!(Format::Base32.format_str(0x41414242, &options), "032sIFAUEQQ=");
 //! assert_eq!(Format::Base64.format_str(0x41414242, &options), "0sQUFCQg==");
 //! // sometimes you might need the raw bytes instead of a String
-//! assert_eq!(Format::Raw.format(0x1337, &options), vec![0x13, 0x37]);
+//! assert_eq!(Format::Raw.format(0x1337, &options), vec![0x00, 0x13, 0x37]);
 //! assert_eq!(Format::Hex.format(0x1337, &options), vec![48, 120, 49, 51, 51, 55]);
+//!
+//! options.set_prefix(false);
+//! options.set_padding(false);
+//!
+//! assert_eq!(Format::Hex.format_str(0x1337, &options), "1337");
+//! assert_eq!(Format::Base32.format_str(0x41414242, &options), "IFAUEQQ=");
+//! assert_eq!(Format::Base64.format_str(0x41414242, &options), "QUFCQg==");
+//!
+//! assert_eq!(Format::Raw.format(0x1337, &options), vec![0x13, 0x37]);
+//! assert_eq!(Format::Hex.format(0x1337, &options), vec![49, 51, 51, 55]);
 //! ```
 
 #![allow(dead_code)]
@@ -276,7 +286,7 @@ impl Format {
             // apperently used nowhere, sometimes 0 is used as a prefix but I
             // think this makes it more clear that this is decimal
             Format::Dec => b"0d".to_vec(),
-            Format::Raw => [].to_vec(), // TODO: find a better way to deal with this
+            Format::Raw => [0x00].to_vec(),
             // very common
             Format::Hex => b"0x".to_vec(),
             // very common
@@ -300,6 +310,7 @@ impl Format {
         let mut buf: Vec<u8> = Vec::new();
         if options.prefix() {
             buf.append(&mut self.prefix());
+            debug!("prefix the buffer: {buf:X?}");
         }
         match self {
             Format::Hex => {
@@ -335,10 +346,7 @@ impl Format {
                     .to_owned(),
             ),
             // Format::Raw => buf.append(&mut split::unsigned_to_vec(num)),
-            Format::Raw => {
-                debug!("do the raw thing");
-                buf.append(&mut split::unsigned_to_vec(num))
-            }
+            Format::Raw => buf.append(&mut split::unsigned_to_vec(num)),
         }
         buf
     }
@@ -460,7 +468,7 @@ where
             Some(sr) => sr,
             None => s,
         };
-        todo!("reading raw not implemented")
+        Ok(join::array_to_unsigned(s.as_bytes())?)
     } else {
         let e = "could not determine the format of the value".to_string();
         Err(anyhow!(e))

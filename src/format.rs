@@ -352,12 +352,18 @@ impl Format {
     }
 }
 
-/// Validates an unsigned integer value that can be one of [Format](format::Format).
+/// Converts a &[str] into an unsigned integer value (like [u128]), according to one of the [Formats](Format)
 ///
 /// The number is assumed to be base-10 by default, it is parsed as a different
-/// [Format](format::Format) if the number is prefixed with the [prefix](format::FormatOptions::prefix),
-/// case sensitive. So if the user inputs `0b1100` then this is parsed as
-/// [Binary](format::Format::Bin) and so on.
+/// [Format] if the number is prefixed with the [prefix](FormatOptions::prefix),
+/// for that [Format]. So if the user inputs `0b1100` then this is parsed as
+/// [Binary](Format::Bin) and so on.
+///
+/// If you also want to parse raw inputs, use [numf_parser].
+///
+/// # Returns
+///
+/// This parser will only output unsigned integers, it cannot be used with signed integers.
 ///
 /// # Example
 ///
@@ -394,6 +400,50 @@ where
     numf_parser(s.as_bytes())
 }
 
+/// Converts any data (as bytes) into an unsigned integer value `T` (like [u128]), according to one of the [Formats](Format)
+///
+/// If you only want to parse text data, use [numf_parser_str] instead.
+///
+/// The parser will first try to convert the data to a [String].
+///
+/// Then, the number is assumed to be base-10 by default, it is parsed as a different
+/// [Format] if the number is prefixed with the [prefix](FormatOptions::prefix),
+/// for that [Format]. So if the user inputs `0b1100` then this is parsed as
+/// [Binary](Format::Bin) and so on.
+///
+/// If none of the text [Formats](Format) matches, the data will be assumed to be raw and converted
+/// to the ingeger type directly.
+///
+/// # Errors
+///
+/// If no text [Format] matches and the data is too long for the integer `T`.
+///
+/// # Returns
+///
+/// This parser will only output unsigned integers, it cannot be used with signed integers.
+///
+/// # Example
+///
+/// This allows base-10 addresses to be passed normally, or values formatted with any of the
+/// [Formats](format::Format) defined by this crate to be passed when prefixed with the respective
+/// prefix.
+///
+/// ```
+/// use clap::Parser;
+/// use numf::format::numf_parser;
+///
+/// let data = &[0x15, 0x92, 0xff];
+/// let result: u64 = 0x1592ff;
+/// assert_eq!(result, numf_parser(data).unwrap());
+///
+/// let data = b"0x1337";
+/// let result: u64 = 0x1337;
+/// assert_eq!(result, numf_parser(data).unwrap());
+///
+/// let data = b"0b110011";
+/// let result: u64 = 0b110011;
+/// assert_eq!(result, numf_parser(data).unwrap());
+/// ```
 pub fn numf_parser<T>(data: &[u8]) -> anyhow::Result<T>
 where
     T: std::str::FromStr + std::convert::TryFrom<u128>,

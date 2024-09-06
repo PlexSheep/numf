@@ -44,7 +44,11 @@ use libpt::log::{debug, trace};
 /// The number type [numf](crate) uses
 pub type NumberType = u128;
 
-/// formats supported by numf
+/// Describes a format for numbers
+///
+/// [Format] can be used to convert unsigned integers into a textual or other representation. See
+/// [Format::format_str] for more. It is also possible to parse the various represenations to
+/// a rust integer, see [numf_parser_str] for that.
 #[derive(Copy, Clone, Debug, Hash, PartialEq, Eq, Default)]
 pub enum Format {
     Dec,
@@ -54,7 +58,7 @@ pub enum Format {
     Octal,
     Base64,
     Base32,
-    /// Write raw data to stdout, not text
+    /// Write raw data, not text
     Raw,
 }
 
@@ -64,11 +68,30 @@ impl Display for Format {
     }
 }
 
-/// Describes what the formatter should do
+/// Describes what the formatter should do exactly
 ///
 /// Use [Self::default] to get a basic variant or create a object yourself.
 ///
 /// This struct can be parsed with [clap] derive.
+///
+/// # Example
+///
+/// ```
+/// use numf::format::{Format, FormatOptions};
+/// let mut options = FormatOptions::default();
+///
+/// assert_eq!(Format::Bin.format_str(256, &options), "100000000");
+/// assert_eq!(Format::Hex.format_str(256, &options), "100");
+/// assert_eq!(Format::Base64.format_str(256, &options), "AQA=");
+///
+/// options.set_prefix(true);
+/// options.set_padding(true);
+///
+/// assert_eq!(Format::Bin.format_str(256, &options), "0b0000000100000000");
+/// assert_eq!(Format::Hex.format_str(256, &options), "0x0100");
+/// assert_eq!(Format::Base64.format_str(256, &options), "0sAQA=");
+///
+/// ```
 #[derive(Parser, Debug, Clone, PartialEq, Eq, Hash)]
 #[clap(author, version, about, long_about = None)]
 #[command(
@@ -276,11 +299,38 @@ impl Default for FormatOptions {
 }
 
 impl Format {
+    /// Get the perfix for that [Format] as [Vec<u8>].
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use numf::format::Format;
+    /// assert_eq!(Format::Bin.prefix_str(), "0b");
+    /// assert_eq!(Format::Dec.prefix_str(), "0d");
+    /// assert_eq!(Format::Hex.prefix_str(), "0x");
+    /// assert_eq!(Format::Octal.prefix_str(), "0o");
+    /// assert_eq!(Format::Base64.prefix_str(), "0s");
+    /// assert_eq!(Format::Base32.prefix_str(), "032s");
+    /// assert_eq!(Format::Raw.prefix_str(), "\x00");
+    /// ```
     pub fn prefix_str(&self) -> String {
         String::from_utf8_lossy(&self.prefix()).to_string()
     }
 
-    /// Get the perfix for that [Format]
+    /// Get the perfix for that [Format] as [Vec<u8>].
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use numf::format::Format;
+    /// assert_eq!(Format::Bin.prefix(), b"0b");
+    /// assert_eq!(Format::Dec.prefix(), b"0d");
+    /// assert_eq!(Format::Hex.prefix(), b"0x");
+    /// assert_eq!(Format::Octal.prefix(), b"0o");
+    /// assert_eq!(Format::Base64.prefix(), b"0s");
+    /// assert_eq!(Format::Base32.prefix(), b"032s");
+    /// assert_eq!(Format::Raw.prefix(), vec![0x00]);
+    /// ```
     pub fn prefix(&self) -> Vec<u8> {
         match self {
             // apperently used nowhere, sometimes 0 is used as a prefix but I
@@ -299,12 +349,60 @@ impl Format {
             Format::Base32 => b"032s".to_vec(),
         }
     }
-    /// format a number with a [Format] and [FormatOptions] to [String]
+    /// format a number with a [Format] and [FormatOptions] to a [String]
+    ///
+    /// If you need raw byte outputs, use [Format::format] instead.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use numf::format::{Format, FormatOptions};
+    /// let mut options = FormatOptions::default();
+    ///
+    /// assert_eq!(Format::Bin.format_str(256, &options), "100000000");
+    /// assert_eq!(Format::Hex.format_str(256, &options), "100");
+    /// assert_eq!(Format::Base64.format_str(256, &options), "AQA=");
+    ///
+    /// options.set_prefix(true);
+    /// options.set_padding(true);
+    ///
+    /// assert_eq!(Format::Bin.format_str(256, &options), "0b0000000100000000");
+    /// assert_eq!(Format::Hex.format_str(256, &options), "0x0100");
+    /// assert_eq!(Format::Base64.format_str(256, &options), "0sAQA=");
+    ///
+    /// ```
     pub fn format_str(&self, num: NumberType, options: &FormatOptions) -> String {
         String::from_utf8_lossy(&self.format(num, options)).to_string()
     }
 
-    /// format a number with a [Format] and [FormatOptions]
+    /// format a number with a [Format] and [FormatOptions] to a byte vector [Vec<u8>]
+    ///
+    /// If you need [String] outputs, use [Format::format_str] instead.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use numf::format::{Format, FormatOptions};
+    /// let mut options = FormatOptions::default();
+    ///
+    /// assert_eq!(Format::Bin.format(256, &options), b"100000000");
+    /// assert_eq!(Format::Hex.format(256, &options), b"100");
+    /// assert_eq!(Format::Hex.format(256, &options), [49, 48, 48]);
+    /// assert_eq!(Format::Base64.format(256, &options), b"AQA=");
+    /// assert_eq!(Format::Raw.format(256, &options), [1, 0]);
+    ///
+    /// options.set_prefix(true);
+    /// options.set_padding(true);
+    ///
+    /// assert_eq!(Format::Bin.format(256, &options), b"0b0000000100000000");
+    /// assert_eq!(Format::Hex.format(256, &options), b"0x0100");
+    /// assert_eq!(Format::Hex.format(256, &options), [48, 120, 48, 49, 48, 48]);
+    /// assert_eq!(Format::Base64.format(256, &options), b"0sAQA=");
+    /// assert_eq!(Format::Raw.format(256, &options), [0, 1, 0]);
+    /// assert_eq!(Format::Raw.format(255, &options), [0, 255]);
+    /// assert_eq!(Format::Raw.format(32000, &options), [0, 125, 0]);
+    ///
+    /// ```
     pub fn format(&self, num: NumberType, options: &FormatOptions) -> Vec<u8> {
         debug!("formatting mode: {self}");
         let mut buf: Vec<u8> = Vec::new();
@@ -424,12 +522,7 @@ where
 ///
 /// # Example
 ///
-/// This allows base-10 addresses to be passed normally, or values formatted with any of the
-/// [Formats](format::Format) defined by this crate to be passed when prefixed with the respective
-/// prefix.
-///
 /// ```
-/// use clap::Parser;
 /// use numf::format::numf_parser;
 ///
 /// let data = &[0x15, 0x92, 0xff];

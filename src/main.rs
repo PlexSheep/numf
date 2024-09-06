@@ -5,11 +5,21 @@ use clap::{CommandFactory, Parser};
 
 mod format;
 use format::*;
+use libpt::log::debug;
 use numf::format::numf_parser;
 
 fn main() -> anyhow::Result<()> {
     // try to read from stdin first, appending the numbers we read to the FormatOptions
     let mut options = FormatOptions::parse();
+    let _logger = libpt::log::Logger::builder()
+        .set_level(options.verbosity.level())
+        .display_time(false)
+        .build()
+        .map_err(|e| {
+            eprintln!("could not initialize logger: {e}");
+        });
+    debug!("logger active");
+
     let mut stdin_nums = Vec::new();
     let stdin = std::io::stdin();
     // only accept numbers from stdin if the stdin is not an interactive terminal

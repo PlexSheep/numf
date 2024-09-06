@@ -25,6 +25,8 @@
 use anyhow::anyhow;
 use clap::{ArgGroup, Parser};
 use libpt::bintols::{join, split};
+use libpt::cli::args::VerbosityLevel;
+use libpt::log::debug;
 
 /// The number type [numf](crate) uses
 pub type NumberType = u128;
@@ -127,6 +129,9 @@ pub struct FormatOptions {
     ///
     /// The numbers may be left empty at first, if numbers are provided from the stdin.
     numbers: Vec<NumberType>,
+
+    #[command(flatten)]
+    pub(crate) verbosity: VerbosityLevel,
 }
 
 impl FormatOptions {
@@ -242,6 +247,7 @@ impl Default for FormatOptions {
             numbers: vec![],
             rand: 0,
             rand_max: NumberType::MAX,
+            verbosity: VerbosityLevel::default(),
         }
     }
 }

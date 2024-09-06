@@ -23,8 +23,9 @@ Current formats are:
 - Decimal
 - Base32
 - Base64
+- Raw
 
-`numf` also has the option of prepending a prefix for each format, such as
+`numf` also has the option of prepending a prefix for the formats, such as
 `0x` for hexadecimal. Numbers may also be provided from the stdin. See `--help`
 flag for more information.
 

@@ -22,7 +22,6 @@
 //! ```
 
 #![allow(dead_code)]
-use std::default;
 use std::fmt::Display;
 
 // this is exported to lib.rs

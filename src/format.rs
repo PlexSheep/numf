@@ -13,9 +13,12 @@
 //! options.set_prefix(true);
 //! options.set_padding(true);
 //!
-//! assert_eq!(Format::Hex.format(0x1337, &options), "0x1337");
-//! assert_eq!(Format::Base32.format(0x41414242, &options), "032sIFAUEQQ=");
-//! assert_eq!(Format::Base64.format(0x41414242, &options), "0sQUFCQg==");
+//! assert_eq!(Format::Hex.format_str(0x1337, &options), "0x1337");
+//! assert_eq!(Format::Base32.format_str(0x41414242, &options), "032sIFAUEQQ=");
+//! assert_eq!(Format::Base64.format_str(0x41414242, &options), "0sQUFCQg==");
+//! // sometimes you might need the raw bytes instead of a String
+//! assert_eq!(Format::Raw.format(0x1337, &options), vec![0x13, 0x37]);
+//! assert_eq!(Format::Hex.format(0x1337, &options), vec![48, 120, 49, 51, 51, 55]);
 //! ```
 
 #![allow(dead_code)] // this is exported to lib.rs
@@ -35,6 +38,8 @@ pub enum Format {
     Octal,
     Base64,
     Base32,
+    /// Write raw data to stdout, not text
+    Raw,
 }
 
 /// Describes what the formatter should do
@@ -59,7 +64,7 @@ Author: {author-with-newline}
 )]
 #[clap(group(
             ArgGroup::new("format")
-                .args(&["hex", "bin", "oct", "dec", "base64", "base32"]),
+                .args(&["hex", "bin", "oct", "dec", "base64", "base32", "raw"]),
         ))]
 pub struct FormatOptions {
     #[arg(short, long)]
@@ -86,6 +91,9 @@ pub struct FormatOptions {
     #[arg(short = 's', long)]
     /// format to base64
     base64: bool,
+    #[arg(short = 'a', long)]
+    /// format raw, no text
+    raw: bool,
     #[arg(short = 'r', long, default_value_t = 0, value_parser=numf_parser::<NumberType>)]
     /// output random numbers
     ///
@@ -136,6 +144,8 @@ impl FormatOptions {
             Format::Base32
         } else if self.hex {
             Format::Hex
+        } else if self.raw {
+            Format::Raw
         } else {
             unreachable!()
         }
@@ -148,9 +158,11 @@ impl FormatOptions {
         self.dec = false;
         self.hex = false;
         self.base64 = false;
+        self.raw = false;
         self.base32 = false;
         match format {
             Format::Bin => self.bin = true,
+            Format::Raw => self.raw = true,
             Format::Hex => self.hex = true,
             Format::Octal => self.oct = true,
             Format::Base64 => self.base64 = true,
@@ -223,6 +235,7 @@ impl Default for FormatOptions {
             oct: false,
             hex: true,
             bin: false,
+            raw: false,
             base32: false,
             base64: false,
             dec: false,
@@ -234,52 +247,74 @@ impl Default for FormatOptions {
 }
 
 impl Format {
+    pub fn prefix_str(&self) -> String {
+        String::from_utf8_lossy(&self.prefix()).to_string()
+    }
+
     /// Get the perfix for that [Format]
-    pub fn prefix(&self) -> String {
+    pub fn prefix(&self) -> Vec<u8> {
         match self {
             // apperently used nowhere, sometimes 0 is used as a prefix but I
             // think this makes it more clear that this is decimal
-            Format::Dec => "0d",
+            Format::Dec => b"0d".to_vec(),
+            Format::Raw => [].to_vec(), // TODO: find a better way to deal with this
             // very common
-            Format::Hex => "0x",
+            Format::Hex => b"0x".to_vec(),
             // very common
-            Format::Bin => "0b",
+            Format::Bin => b"0b".to_vec(),
             // somewhat common
-            Format::Octal => "0o",
+            Format::Octal => b"0o".to_vec(),
             // perl and a few other programs seem to use this too
-            Format::Base64 => "0s",
+            Format::Base64 => b"0s".to_vec(),
             // no idea, I made this up
-            Format::Base32 => "032s",
+            Format::Base32 => b"032s".to_vec(),
         }
-        .to_string()
     }
+    /// format a number with a [Format] and [FormatOptions] to [String]
+    pub fn format_str(&self, num: NumberType, options: &FormatOptions) -> String {
+        String::from_utf8_lossy(&self.format(num, options)).to_string()
+    }
+
     /// format a number with a [Format] and [FormatOptions]
-    pub fn format(&self, num: NumberType, options: &FormatOptions) -> String {
-        let mut buf = String::new();
+    pub fn format(&self, num: NumberType, options: &FormatOptions) -> Vec<u8> {
+        let mut buf: Vec<u8> = Vec::new();
         if options.prefix() {
-            buf += &self.prefix();
+            buf.append(&mut self.prefix());
         }
         match self {
             Format::Hex => {
                 if options.padding() {
                     let tmp = &format!("{num:X}");
-                    buf += &("0".repeat((2 - tmp.len() % 2) % 2) + tmp);
+                    let tmp1 = &("0".repeat((2 - tmp.len() % 2) % 2) + tmp);
+                    buf.append(&mut tmp1.as_bytes().to_owned());
                 } else {
-                    buf += &format!("{num:X}");
+                    buf.append(&mut format!("{num:X}").as_bytes().to_owned());
                 }
             }
             Format::Bin => {
                 if options.padding() {
                     let tmp = &format!("{num:b}");
-                    buf += &("0".repeat((8 - tmp.len() % 8) % 8) + tmp);
+                    let tmp1 = &("0".repeat((8 - tmp.len() % 8) % 8) + tmp);
+                    buf.append(&mut tmp1.as_bytes().to_owned());
                 } else {
-                    buf += &format!("{num:b}");
+                    buf.append(&mut format!("{num:b}").as_bytes().to_owned());
                 }
             }
-            Format::Octal => buf += &format!("{num:o}"),
-            Format::Dec => buf += &format!("{num}"),
-            Format::Base64 => buf += &fast32::base64::RFC4648.encode(&split::unsigned_to_vec(num)),
-            Format::Base32 => buf += &fast32::base32::RFC4648.encode(&split::unsigned_to_vec(num)),
+            Format::Octal => buf.append(&mut format!("{num:o}").as_bytes().to_owned()),
+            Format::Dec => buf.append(&mut format!("{num}").as_bytes().to_owned()),
+            Format::Base64 => buf.append(
+                &mut fast32::base64::RFC4648
+                    .encode(&split::unsigned_to_vec(num))
+                    .as_bytes()
+                    .to_owned(),
+            ),
+            Format::Base32 => buf.append(
+                &mut fast32::base32::RFC4648
+                    .encode(&split::unsigned_to_vec(num))
+                    .as_bytes()
+                    .to_owned(),
+            ),
+            Format::Raw => buf.append(&mut split::unsigned_to_vec(num)),
         }
         buf
     }
@@ -324,8 +359,8 @@ where
     <T as std::convert::TryFrom<u128>>::Error: std::marker::Sync,
     <T as std::convert::TryFrom<u128>>::Error: 'static,
 {
-    if s.starts_with(&Format::Dec.prefix()) || s.parse::<T>().is_ok() {
-        let s = match s.strip_prefix(&Format::Dec.prefix()) {
+    if s.starts_with(&Format::Dec.prefix_str()) || s.parse::<T>().is_ok() {
+        let s = match s.strip_prefix(&Format::Dec.prefix_str()) {
             Some(sr) => sr,
             None => s,
         };
@@ -336,8 +371,8 @@ where
                 Err(anyhow!(e))
             }
         }
-    } else if s.starts_with(&Format::Hex.prefix()) {
-        let s = match s.strip_prefix(&Format::Hex.prefix()) {
+    } else if s.starts_with(&Format::Hex.prefix_str()) {
+        let s = match s.strip_prefix(&Format::Hex.prefix_str()) {
             Some(sr) => sr,
             None => s,
         };
@@ -348,8 +383,8 @@ where
                 Err(anyhow!(e))
             }
         }
-    } else if s.starts_with(&Format::Octal.prefix()) {
-        let s = match s.strip_prefix(&Format::Octal.prefix()) {
+    } else if s.starts_with(&Format::Octal.prefix_str()) {
+        let s = match s.strip_prefix(&Format::Octal.prefix_str()) {
             Some(sr) => sr,
             None => s,
         };
@@ -360,8 +395,8 @@ where
                 Err(anyhow!(e))
             }
         }
-    } else if s.starts_with(&Format::Bin.prefix()) {
-        let s = match s.strip_prefix(&Format::Bin.prefix()) {
+    } else if s.starts_with(&Format::Bin.prefix_str()) {
+        let s = match s.strip_prefix(&Format::Bin.prefix_str()) {
             Some(sr) => sr,
             None => s,
         };
@@ -372,8 +407,8 @@ where
                 Err(anyhow!(e))
             }
         }
-    } else if s.starts_with(&Format::Base64.prefix()) {
-        let s = match s.strip_prefix(&Format::Base64.prefix()) {
+    } else if s.starts_with(&Format::Base64.prefix_str()) {
+        let s = match s.strip_prefix(&Format::Base64.prefix_str()) {
             Some(sr) => sr,
             None => s,
         };
@@ -384,8 +419,8 @@ where
                 Err(anyhow!(e))
             }
         }
-    } else if s.starts_with(&Format::Base32.prefix()) {
-        let s = match s.strip_prefix(&Format::Base32.prefix()) {
+    } else if s.starts_with(&Format::Base32.prefix_str()) {
+        let s = match s.strip_prefix(&Format::Base32.prefix_str()) {
             Some(sr) => sr,
             None => s,
         };
@@ -396,6 +431,12 @@ where
                 Err(anyhow!(e))
             }
         }
+    } else if s.starts_with(&Format::Raw.prefix_str()) {
+        let s = match s.strip_prefix(&Format::Raw.prefix_str()) {
+            Some(sr) => sr,
+            None => s,
+        };
+        todo!("reading raw not implemented")
     } else {
         let e = "could not determine the format of the value".to_string();
         Err(anyhow!(e))

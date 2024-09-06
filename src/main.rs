@@ -1,4 +1,4 @@
-use std::io::{IsTerminal, Read};
+use std::io::{stdout, IsTerminal, Read, Write};
 use std::process::exit;
 
 use clap::{CommandFactory, Parser};
@@ -61,13 +61,16 @@ fn main() -> anyhow::Result<()> {
         exit(1);
     }
 
-    let mut out: Vec<String> = Vec::new();
+    let mut out: Vec<Vec<u8>> = Vec::new();
 
     for num in options.numbers() {
         out.push(options.format().format(*num, &options));
     }
     for o in out {
-        println!("{o}")
+        let mut stdout = std::io::stdout();
+        stdout.write_all(&o)?;
+        stdout.write_all(b"\n")?;
+        stdout.flush()?;
     }
     Ok(())
 }

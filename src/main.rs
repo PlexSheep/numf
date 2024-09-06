@@ -1,4 +1,4 @@
-use std::io::{stdout, IsTerminal, Read, Write};
+use std::io::{IsTerminal, Read, Write};
 use std::process::exit;
 
 use clap::{CommandFactory, Parser};

@@ -7,7 +7,7 @@ use numf::format::numf_parser_str;
 mod format;
 use crate::format::{numf_parser, Format};
 use format::*;
-use libpt::log::debug;
+use libpt::log::{debug, error};
 
 fn main() -> anyhow::Result<()> {
     // try to read from stdin first, appending the numbers we read to the FormatOptions
@@ -17,7 +17,7 @@ fn main() -> anyhow::Result<()> {
         .display_time(false)
         .build()
         .map_err(|e| {
-            eprintln!("could not initialize logger: {e}");
+            error!("could not initialize logger: {e}");
         });
     debug!("logger active");
 
@@ -34,7 +34,7 @@ fn main() -> anyhow::Result<()> {
                             Ok(n) => n,
                             Err(e) => {
                                 eprintln!("{}", FormatOptions::command().render_usage());
-                                eprintln!("could not parse number from stdin: {e:#?}");
+                                error!("could raw inputs from stdin as numbers: {e:#?}");
                                 exit(2);
                             }
                         };
@@ -48,7 +48,7 @@ fn main() -> anyhow::Result<()> {
                         Ok(n) => n,
                         Err(e) => {
                             eprintln!("{}", FormatOptions::command().render_usage());
-                            eprintln!("could not parse number from stdin: {e:#?}");
+                            error!("could not parse number from stdin: {e:#?}");
                             exit(2);
                         }
                     };
@@ -57,7 +57,7 @@ fn main() -> anyhow::Result<()> {
             }
             Err(e) => {
                 eprintln!("{}", FormatOptions::command().render_usage());
-                eprintln!("could not read from stdin: {e:#?}");
+                error!("could not read from stdin: {e:#?}");
                 exit(2);
             }
         };
@@ -75,7 +75,7 @@ fn main() -> anyhow::Result<()> {
     // exit with error if no numbers are to be formatted
     if options.numbers().is_empty() {
         eprintln!("{}", FormatOptions::command().render_usage());
-        eprintln!("no numbers have been provided");
+        error!("no numbers have been provided");
         exit(1);
     }
 

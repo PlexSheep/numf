@@ -41,6 +41,9 @@ fn format() {
         Format::Base64.format_str(0x4141414141414141, &options),
         "QUFBQUFBQUE="
     );
+
+    assert_eq!(Format::Raw.format(0x1337, &options), vec![0x13, 0x37]);
+    assert_eq!(Format::Raw.format(0x0, &options), vec![0x0]);
 }
 
 #[test]
@@ -91,6 +94,9 @@ fn format_padding() {
         Format::Base64.format_str(0x4141414141414141, &options),
         "QUFBQUFBQUE="
     );
+
+    assert_eq!(Format::Raw.format(0x1337, &options), vec![0x13, 0x37]);
+    assert_eq!(Format::Raw.format(0x0, &options), vec![0x0]);
 }
 
 #[test]
@@ -142,6 +148,9 @@ fn format_prefix() {
         Format::Base64.format_str(0x4141414141414141, &options),
         "0sQUFBQUFBQUE="
     );
+
+    assert_eq!(Format::Raw.format(0x1337, &options), vec![0x0, 0x13, 0x37]);
+    assert_eq!(Format::Raw.format(0x0, &options), vec![0x0, 0x0]);
 }
 
 #[test]
@@ -199,6 +208,9 @@ fn format_padded_prefix() {
         Format::Base64.format_str(0x4141414141414141, &options),
         "0sQUFBQUFBQUE="
     );
+
+    assert_eq!(Format::Raw.format(0x1337, &options), vec![0x0, 0x13, 0x37]);
+    assert_eq!(Format::Raw.format(0x0, &options), vec![0x0, 0x0]);
 }
 
 #[test]
@@ -215,41 +227,46 @@ fn set_format_checker() {
 
 #[test]
 fn parser_dec() {
-    assert_eq!(numf_parser::<u32>("1337").unwrap(), 1337);
-    assert_eq!(numf_parser::<u32>("0d1337").unwrap(), 1337);
+    assert_eq!(numf_parser_str::<u32>("1337").unwrap(), 1337);
+    assert_eq!(numf_parser_str::<u32>("0d1337").unwrap(), 1337);
 }
 
 #[test]
 fn parser_bin() {
-    assert_eq!(numf_parser::<u32>("0b11001").unwrap(), 0b11001);
-    assert_eq!(numf_parser::<u32>("0b11001").unwrap(), 0b11001);
+    assert_eq!(numf_parser_str::<u32>("0b11001").unwrap(), 0b11001);
+    assert_eq!(numf_parser_str::<u32>("0b11001").unwrap(), 0b11001);
 }
 
 #[test]
 fn parser_hex() {
-    assert_eq!(numf_parser::<u32>("0xdeadbeef").unwrap(), 0xdeadbeef);
+    assert_eq!(numf_parser_str::<u32>("0xdeadbeef").unwrap(), 0xdeadbeef);
 }
 
 #[test]
 fn parser_oct() {
-    assert_eq!(numf_parser::<u32>("0o771171").unwrap(), 0o771171);
+    assert_eq!(numf_parser_str::<u32>("0o771171").unwrap(), 0o771171);
 }
 
 #[test]
 fn parser_b64() {
-    assert_eq!(numf_parser::<u32>("0sQUFCQg==").unwrap(), 0x41414242);
+    assert_eq!(numf_parser_str::<u32>("0sQUFCQg==").unwrap(), 0x41414242);
 }
 
 #[test]
 fn parser_b32() {
-    assert_eq!(numf_parser::<u32>("032sIFAUEQQ=").unwrap(), 0x41414242);
+    assert_eq!(numf_parser_str::<u32>("032sIFAUEQQ=").unwrap(), 0x41414242);
+}
+
+#[test]
+fn parser_raw() {
+    assert_eq!(numf_parser_str::<u32>("\x00\x50\x60").unwrap(), 0x5060);
 }
 
 #[test]
 fn parser_generics() {
-    assert_eq!(numf_parser::<u8>("55").unwrap(), 55);
-    assert_eq!(numf_parser::<u16>("55").unwrap(), 55);
-    assert_eq!(numf_parser::<u32>("55").unwrap(), 55);
-    assert_eq!(numf_parser::<u64>("55").unwrap(), 55);
-    assert_eq!(numf_parser::<u128>("55").unwrap(), 55);
+    assert_eq!(numf_parser_str::<u8>("55").unwrap(), 55);
+    assert_eq!(numf_parser_str::<u16>("55").unwrap(), 55);
+    assert_eq!(numf_parser_str::<u32>("55").unwrap(), 55);
+    assert_eq!(numf_parser_str::<u64>("55").unwrap(), 55);
+    assert_eq!(numf_parser_str::<u128>("55").unwrap(), 55);
 }

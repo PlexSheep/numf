@@ -1,15 +1,12 @@
 # numf
 
-
 ![Project badge](https://img.shields.io/badge/language-Rust-blue.svg)
 ![Crates.io License](https://img.shields.io/crates/l/numf)
-![Gitea Release](https://img.shields.io/gitea/v/release/PlexSheep/numf?gitea_url=https%3A%2F%2Fgit.cscherr.de)
-![Gitea language count](https://img.shields.io/gitea/languages/count/PlexSheep/numf?gitea_url=https%3A%2F%2Fgit.cscherr.de)
-[![cargo checks and tests](https://github.com/PlexSheep/numf/actions/workflows/cargo.yaml/badge.svg)](https://github.com/PlexSheep/numf/actions/workflows/cargo.yaml)
+![GitHub Release](https://img.shields.io/github/v/release/PlexSheep/numf)
+![GitHub language count](https://img.shields.io/github/languages/count/PlexSheep/numf)
+[![Rust CI](https://github.com/PlexSheep/numf/actions/workflows/cargo.yaml/badge.svg)](https://github.com/PlexSheep/numf/actions/workflows/cargo.yaml)
 
-* [Original Repository](https://git.cscherr.de/PlexSheep/numf)
-* [GitHub Mirror](https://github.com/PlexSheep/numf)
-* [Codeberg Mirror](https://codeberg.org/PlexSheep/numf)
+* [GitHub](https://github.com/PlexSheep/numf)
 * [crates.io](https://crates.io/crates/numf)
 * [docs.rs](https://docs.rs/numf/latest/numf/)
 

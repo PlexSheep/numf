@@ -1,6 +1,6 @@
 [package]
 name = "numf"
-version = "0.4.1"
+version = "0.4.2"
 edition = "2021"
 publish = true
 authors = ["Christoph J. Scherr <software@cscherr.de>"]

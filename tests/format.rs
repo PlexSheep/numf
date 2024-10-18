@@ -270,3 +270,12 @@ fn parser_generics() {
     assert_eq!(numf_parser_str::<u64>("55").unwrap(), 55);
     assert_eq!(numf_parser_str::<u128>("55").unwrap(), 55);
 }
+
+#[test]
+fn parser_underscores() {
+    assert_eq!(numf_parser_str::<u16>("5_500").unwrap(), 5_500);
+    assert_eq!(
+        numf_parser_str::<u64>("0xffffffff_00110011").unwrap(),
+        0xffffffff_00110011
+    );
+}

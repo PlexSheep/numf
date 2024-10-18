@@ -93,20 +93,12 @@ impl Display for Format {
 ///
 /// ```
 #[derive(Parser, Debug, Clone, PartialEq, Eq, Hash)]
-#[clap(author, version, about, long_about = None)]
 #[command(
     author,
     version,
     about,
     long_about,
-    help_template = r#"{about-section}
-{usage-heading} {usage}
-{all-args}{tab}
-
-{name}: {version}
-Author: {author-with-newline}
-"#
-)]
+    help_template = libpt::cli::args::HELP_TEMPLATE)]
 #[clap(group(
             ArgGroup::new("format")
                 .args(&["hex", "bin", "oct", "dec", "base64", "base32", "raw"]),
@@ -158,7 +150,13 @@ pub struct FormatOptions {
     /// Any of the [Formats](Format::format) are supported, but the prefixes are needed for formats
     /// other than decimal.
     ///
-    /// Formats:
+    /// Formats: Decimal, Hexadecimal, Binary, Octal, Base64, Base32, Raw data
+    ///
+    /// Underscores will be completely ignored and are allowed for readability.
+    ///
+    /// Format Prefixes:
+    ///
+    /// * '0d' - Decimal, assumed for numeric values by default
     ///
     /// * '0x' - Hexadecimal
     ///
@@ -169,6 +167,8 @@ pub struct FormatOptions {
     /// * '0s' - Base64
     ///
     /// * '032s' - Base32
+    ///
+    /// * If no format can be determined, the data will be assumed to be raw bytes.
     ///
     /// The numbers may be left empty at first, if numbers are provided from the stdin.
     numbers: Vec<NumberType>,
@@ -512,6 +512,9 @@ where
 /// If none of the text [Formats](Format) matches, the data will be assumed to be raw and converted
 /// to the ingeger type directly.
 ///
+/// Note: Underscores will be completely ignored, as they are assumed to just be there for
+/// readability.
+///
 /// # Errors
 ///
 /// If no text [Format] matches and the data is too long for the integer `T`.
@@ -551,7 +554,7 @@ where
     <T as std::convert::TryFrom<u128>>::Error: std::marker::Sync,
     <T as std::convert::TryFrom<u128>>::Error: 'static,
 {
-    let data_as_text = String::from_utf8_lossy(data).to_string();
+    let data_as_text = String::from_utf8_lossy(data).to_string().replace("_", "");
 
     if data_as_text.starts_with(&Format::Dec.prefix_str()) || data_as_text.parse::<T>().is_ok() {
         let s = match data_as_text.strip_prefix(&Format::Dec.prefix_str()) {

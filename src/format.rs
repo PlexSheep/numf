@@ -150,7 +150,13 @@ pub struct FormatOptions {
     /// Any of the [Formats](Format::format) are supported, but the prefixes are needed for formats
     /// other than decimal.
     ///
-    /// Formats:
+    /// Formats: Decimal, Hexadecimal, Binary, Octal, Base64, Base32, Raw data
+    ///
+    /// Underscores will be completely ignored and are allowed for readability.
+    ///
+    /// Format Prefixes:
+    ///
+    /// * '0d' - Decimal, assumed for numeric values by default
     ///
     /// * '0x' - Hexadecimal
     ///
@@ -161,6 +167,8 @@ pub struct FormatOptions {
     /// * '0s' - Base64
     ///
     /// * '032s' - Base32
+    ///
+    /// * If no format can be determined, the data will be assumed to be raw bytes.
     ///
     /// The numbers may be left empty at first, if numbers are provided from the stdin.
     numbers: Vec<NumberType>,

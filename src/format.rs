@@ -504,6 +504,9 @@ where
 /// If none of the text [Formats](Format) matches, the data will be assumed to be raw and converted
 /// to the ingeger type directly.
 ///
+/// Note: Underscores will be completely ignored, as they are assumed to just be there for
+/// readability.
+///
 /// # Errors
 ///
 /// If no text [Format] matches and the data is too long for the integer `T`.
@@ -543,7 +546,7 @@ where
     <T as std::convert::TryFrom<u128>>::Error: std::marker::Sync,
     <T as std::convert::TryFrom<u128>>::Error: 'static,
 {
-    let data_as_text = String::from_utf8_lossy(data).to_string();
+    let data_as_text = String::from_utf8_lossy(data).to_string().replace("_", "");
 
     if data_as_text.starts_with(&Format::Dec.prefix_str()) || data_as_text.parse::<T>().is_ok() {
         let s = match data_as_text.strip_prefix(&Format::Dec.prefix_str()) {

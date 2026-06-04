@@ -85,7 +85,10 @@ fn main() -> anyhow::Result<()> {
     let mut out: Vec<Vec<u8>> = Vec::new();
 
     for num in options.numbers() {
-        out.push(options.format().format(*num, &options));
+        match options.format().format(*num, &options) {
+            Ok(v) => out.push(v),
+            Err(e) => error!("{e}"),
+        }
     }
     for o in out {
         let mut stdout = std::io::stdout();

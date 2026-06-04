@@ -39,7 +39,7 @@ use clap::{ArgGroup, Parser};
 use clap_verbosity_flag::Verbosity;
 use log::{debug, trace};
 
-use crate::bintols::{array_to_unsigned, to_twos_complement, unsigned_to_vec};
+use crate::bintols::{array_to_unsigned, from_twos_complement_to_asbolute, unsigned_to_vec};
 
 /// The number type [numf](crate) uses
 pub type NumberType = u128;
@@ -398,8 +398,8 @@ impl Format {
     ///
     /// ```
     #[allow(dead_code)] // public API
-    pub fn format_str(&self, num: NumberType, options: &FormatOptions) -> String {
-        String::from_utf8_lossy(&self.format(num, options)).to_string()
+    pub fn format_str(&self, num: NumberType, options: &FormatOptions) -> anyhow::Result<String> {
+        Ok(String::from_utf8_lossy(&self.format(num, options)?).to_string())
     }
 
     /// format a number with a [Format] and [FormatOptions] to a byte vector [Vec<u8>]
@@ -430,7 +430,7 @@ impl Format {
     /// assert_eq!(Format::Raw.format(32000, &options), [0, 125, 0]);
     ///
     /// ```
-    pub fn format(&self, num: NumberType, options: &FormatOptions) -> Vec<u8> {
+    pub fn format(&self, num: NumberType, options: &FormatOptions) -> anyhow::Result<Vec<u8>> {
         debug!("formatting mode: {self}");
         let mut buf: Vec<u8> = Vec::new();
         if options.prefix() {
@@ -459,9 +459,9 @@ impl Format {
             Format::Octal => buf.append(&mut format!("{num:o}").as_bytes().to_owned()),
             Format::Dec => buf.append(&mut format!("{num}").as_bytes().to_owned()),
             Format::DecSigned(bl) => {
-                debug!("input   {num:#018x}");
-                let res: u128 = to_twos_complement(num, *bl);
-                debug!("twos    {res:#018x}");
+                trace!("input   {num:#018x}");
+                let res: u128 = from_twos_complement_to_asbolute(num, *bl)?;
+                trace!("twos    {res:#018x}");
 
                 buf.append(&mut format!("-{res}").as_bytes().to_owned());
             }
@@ -479,7 +479,7 @@ impl Format {
             ),
             Format::Raw => buf.append(&mut unsigned_to_vec(num)),
         }
-        buf
+        Ok(buf)
     }
 }
 

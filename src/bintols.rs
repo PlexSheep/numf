@@ -1,5 +1,5 @@
 use anyhow::anyhow;
-use log::trace;
+use log::{debug, error, trace};
 
 /// Join a [Vec] of [u8]s into an unsigned integer
 ///
@@ -78,12 +78,54 @@ where
     buf
 }
 
-pub fn to_twos_complement(mut num: u128, bl: u8) -> u128 {
-    let mask = (1 << (bl)) - 1;
-    num &= mask;
-    if num >> bl == 1 {
-        panic!("num already has the sign bit set");
+pub fn highest_set_bit_pos(mut num: u128) -> u8 {
+    let mut b = 0;
+    while num > 1 {
+        num >>= 1;
+        b += 1;
     }
+    b
+}
+
+pub fn from_twos_complement_to_asbolute(mut num: u128, bl: u8) -> anyhow::Result<u128> {
+    if num >> (bl - 1) > 1 {
+        let err = anyhow!("input number {num} is too large to fit into an {bl} bit signed integer");
+        return Err(err);
+    }
+
+    debug!("num (unsigned): {num:#x}");
+    trace!("bl: {bl}");
+    let mask = (1 << (bl)) - 1;
+    trace!("mask: {mask:#x}");
+    num &= mask;
+    trace!("num (trunc): {num:#x}");
     num ^= mask;
-    num + 1
+    trace!("num (flip): {num:#x}");
+    num += 1;
+    debug!("num (signed): {num:#x} = {num:#b} = {num}");
+    let limit = 2u128.pow(bl as u32 - 1);
+    trace!("limit: {limit}");
+    assert!(num <= limit);
+    Ok(num)
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_bintols_highest_set_bit_pos() {
+        assert_eq!(highest_set_bit_pos(0b1_0000), 4);
+        assert_eq!(highest_set_bit_pos(0b10_0000), 5);
+        assert_eq!(highest_set_bit_pos(0b11_1111), 5);
+        assert_eq!(highest_set_bit_pos(0b1_1111), 4);
+    }
+
+    #[test]
+    fn test_to_negative_twos_complement() {
+        assert_eq!(from_twos_complement_to_asbolute(0b1111_1111, 8).unwrap(), 1);
+        assert_eq!(from_twos_complement_to_asbolute(0b1111_1110, 8).unwrap(), 2);
+        assert_eq!(from_twos_complement_to_asbolute(0b1_1111, 5).unwrap(), 1);
+        assert_eq!(from_twos_complement_to_asbolute(0b1_0000, 5).unwrap(), 16);
+    }
 }

@@ -34,11 +34,12 @@
 use std::fmt::Display;
 
 // this is exported to lib.rs
-use crate::bintols::{join, split};
 use anyhow::anyhow;
 use clap::{ArgGroup, Parser};
 use clap_verbosity_flag::Verbosity;
 use log::{debug, trace};
+
+use crate::bintols::{array_to_unsigned, unsigned_to_vec};
 
 /// The number type [numf](crate) uses
 pub type NumberType = u128;
@@ -441,18 +442,17 @@ impl Format {
             Format::Dec => buf.append(&mut format!("{num}").as_bytes().to_owned()),
             Format::Base64 => buf.append(
                 &mut fast32::base64::RFC4648
-                    .encode(&split::unsigned_to_vec(num))
+                    .encode(&unsigned_to_vec(num))
                     .as_bytes()
                     .to_owned(),
             ),
             Format::Base32 => buf.append(
                 &mut fast32::base32::RFC4648
-                    .encode(&split::unsigned_to_vec(num))
+                    .encode(&unsigned_to_vec(num))
                     .as_bytes()
                     .to_owned(),
             ),
-            // Format::Raw => buf.append(&mut split::unsigned_to_vec(num)),
-            Format::Raw => buf.append(&mut split::unsigned_to_vec(num)),
+            Format::Raw => buf.append(&mut unsigned_to_vec(num)),
         }
         buf
     }
@@ -618,7 +618,7 @@ where
             None => &data_as_text,
         };
         match fast32::base64::RFC4648.decode_str(s) {
-            Ok(r) => Ok(join::array_to_unsigned::<T>(&r)?),
+            Ok(r) => Ok(array_to_unsigned::<T>(&r)?),
             Err(e) => {
                 let e = format!("{e}");
                 Err(anyhow!(e))
@@ -630,7 +630,7 @@ where
             None => &data_as_text,
         };
         match fast32::base32::RFC4648.decode_str(s) {
-            Ok(r) => Ok(join::array_to_unsigned::<T>(&r)?),
+            Ok(r) => Ok(array_to_unsigned::<T>(&r)?),
             Err(e) => {
                 let e = format!("{e}");
                 Err(anyhow!(e))
@@ -643,6 +643,6 @@ where
         } else {
             data.as_ref().to_vec()
         };
-        Ok(join::array_to_unsigned(&s)?)
+        Ok(array_to_unsigned(&s)?)
     }
 }

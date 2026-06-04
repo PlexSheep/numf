@@ -39,11 +39,13 @@ use clap::{ArgGroup, Parser};
 use clap_verbosity_flag::Verbosity;
 use log::{debug, trace};
 
-use crate::bintols::{array_to_unsigned, signed_to_abs, unsigned_to_vec};
+use crate::{
+    bintols::{absolute_to_negative_signed_abs, array_to_unsigned, signed_to_abs, unsigned_to_vec},
+    macros::UseManyTraitsForGenericUnsignedInt,
+};
 
 /// The number type [numf](crate) uses
 pub type NumberType = u128;
-pub type NumberTypeSigned = i128;
 
 pub const HELP_TEMPLATE: &str = r"{about-section}
 {usage-heading} {usage}
@@ -483,209 +485,194 @@ impl Format {
     }
 }
 
-/// Converts a &[str] into an unsigned integer value (like [u128]), according to one of the [Formats](Format)
-///
-/// The number is assumed to be base-10 by default, it is parsed as a different
-/// [Format] if the number is prefixed with the [prefix](FormatOptions::prefix),
-/// for that [Format]. So if the user inputs `0b1100` then this is parsed as
-/// [Binary](Format::Bin) and so on.
-///
-/// If you also want to parse raw inputs, use [numf_parser].
-///
-/// # Returns
-///
-/// This parser will only output unsigned integers, it cannot be used with signed integers.
-///
-/// # Example
-///
-/// This allows base-10 addresses to be passed normally, or values formatted with any of the
-/// [Formats](format::Format) defined by this crate to be passed when prefixed with the respective
-/// prefix.
-///
-/// ```
-/// use clap::Parser;
-/// use numf::format::numf_parser_str;
-///
-/// #[derive(Parser)]
-/// struct Args {
-///     #[clap(short, long, value_parser=numf_parser_str::<u128>)]
-///     address: u128,
-/// }
-/// let args = Args::parse_from(&["", "-a", "0x10"]);
-/// assert_eq!(args.address, 16);
-/// ```
-pub fn numf_parser_str<T>(s: &str) -> anyhow::Result<T>
-where
-    T: std::str::FromStr + std::convert::TryFrom<u128>,
-    <T as std::str::FromStr>::Err: std::fmt::Display,
-    T: num::Num,
-    <T as num::Num>::FromStrRadixErr: std::fmt::Display,
-    <T as std::str::FromStr>::Err: std::fmt::Debug,
-    u128: std::convert::From<T>,
-    <T as std::str::FromStr>::Err: std::error::Error,
-    <T as std::convert::TryFrom<u128>>::Error: std::error::Error,
-    <T as std::convert::TryFrom<u128>>::Error: std::marker::Send,
-    <T as std::convert::TryFrom<u128>>::Error: std::marker::Sync,
-    <T as std::convert::TryFrom<u128>>::Error: 'static,
-{
-    numf_parser(s.as_bytes())
-}
-
-/// Converts any data (as bytes) into an unsigned integer value `T` (like [u128]), according to one of the [Formats](Format)
-///
-/// If you only want to parse text data, use [numf_parser_str] instead.
-///
-/// The parser will first try to convert the data to a [String].
-///
-/// Then, the number is assumed to be base-10 by default, it is parsed as a different
-/// [Format] if the number is prefixed with the [prefix](FormatOptions::prefix),
-/// for that [Format]. So if the user inputs `0b1100` then this is parsed as
-/// [Binary](Format::Bin) and so on.
-///
-/// If none of the text [Formats](Format) matches, the data will be assumed to be raw and converted
-/// to the ingeger type directly.
-///
-/// Note: Underscores will be completely ignored, as they are assumed to just be there for
-/// readability.
-///
-/// # Errors
-///
-/// If no text [Format] matches and the data is too long for the integer `T`.
-///
-/// # Returns
-///
-/// This parser will only output unsigned integers, it cannot be used with signed integers.
-///
-/// # Example
-///
-/// ```
-/// use numf::format::numf_parser;
-///
-/// let data = &[0x15, 0x92, 0xff];
-/// let result: u64 = 0x1592ff;
-/// assert_eq!(result, numf_parser(data).unwrap());
-///
-/// let data = b"0x1337";
-/// let result: u64 = 0x1337;
-/// assert_eq!(result, numf_parser(data).unwrap());
-///
-/// let data = b"0b110011";
-/// let result: u64 = 0b110011;
-/// assert_eq!(result, numf_parser(data).unwrap());
-/// ```
-pub fn numf_parser<T>(data: &[u8]) -> anyhow::Result<T>
-where
-    T: std::str::FromStr + std::convert::TryFrom<u128>,
-    <T as std::str::FromStr>::Err: std::fmt::Display,
-    T: num::Num,
-    <T as num::Num>::FromStrRadixErr: std::fmt::Display,
-    <T as std::str::FromStr>::Err: std::fmt::Debug,
-    u128: std::convert::From<T>,
-    <T as std::str::FromStr>::Err: std::error::Error,
-    <T as std::convert::TryFrom<u128>>::Error: std::error::Error,
-    <T as std::convert::TryFrom<u128>>::Error: std::marker::Send,
-    <T as std::convert::TryFrom<u128>>::Error: std::marker::Sync,
-    <T as std::convert::TryFrom<u128>>::Error: 'static,
-{
-    let data_as_text = String::from_utf8_lossy(data).to_string().replace("_", "");
-
-    if data_as_text.starts_with(&Format::Dec.prefix_str()) || data_as_text.parse::<T>().is_ok() {
-        let s = match data_as_text.strip_prefix(&Format::Dec.prefix_str()) {
-            Some(sr) => sr,
-            None => &data_as_text,
-        };
-        match s.parse() {
-            Ok(r) => Ok(r),
-            Err(e) => {
-                let e = format!("{e}");
-                Err(anyhow!(e))
-            }
-        }
-    } else if data_as_text.starts_with(&Format::DecSigned(0).prefix_str())
-        || data_as_text.parse::<i128>().is_ok()
+UseManyTraitsForGenericUnsignedInt!(
+    /// Converts a &[str] into an unsigned integer value (like [u128]), according to one of the [Formats](Format)
+    ///
+    /// The number is assumed to be base-10 by default, it is parsed as a different
+    /// [Format] if the number is prefixed with the [prefix](FormatOptions::prefix),
+    /// for that [Format]. So if the user inputs `0b1100` then this is parsed as
+    /// [Binary](Format::Bin) and so on.
+    ///
+    /// If you also want to parse raw inputs, use [numf_parser].
+    ///
+    /// # Returns
+    ///
+    /// This parser will only output unsigned integers, it cannot be used with signed integers.
+    ///
+    /// # Example
+    ///
+    /// This allows base-10 addresses to be passed normally, or values formatted with any of the
+    /// [Formats](format::Format) defined by this crate to be passed when prefixed with the respective
+    /// prefix.
+    ///
+    /// ```
+    /// use clap::Parser;
+    /// use numf::format::numf_parser_str;
+    ///
+    /// #[derive(Parser)]
+    /// struct Args {
+    ///     #[clap(short, long, value_parser=numf_parser_str::<u128>)]
+    ///     address: u128,
+    /// }
+    /// let args = Args::parse_from(&["", "-a", "0x10"]);
+    /// assert_eq!(args.address, 16);
+    /// ```
+    pub fn numf_parser_str<T>(s: &str) -> anyhow::Result<T>
+    where
+        T: SO_MANY_TRAITS_FROM_MACRO,
     {
-        let s = match data_as_text.strip_prefix(&Format::DecSigned(0).prefix_str()) {
-            Some(sr) => sr,
-            None => &data_as_text,
-        };
-        match s.parse::<i128>() {
-            Ok(r) => {
-                // TODO: But the integer is actually negative!
-
-                todo!("Convert {r} to an i(BITS) and then to the required type")
-            }
-            Err(e) => {
-                let e = format!("{e}");
-                Err(anyhow!(e))
-            }
-        }
-    } else if data_as_text.starts_with(&Format::Hex.prefix_str()) {
-        let s = match data_as_text.strip_prefix(&Format::Hex.prefix_str()) {
-            Some(sr) => sr,
-            None => &data_as_text,
-        };
-        match T::from_str_radix(s, 16) {
-            Ok(r) => Ok(r),
-            Err(e) => {
-                let e = format!("{e}");
-                Err(anyhow!(e))
-            }
-        }
-    } else if data_as_text.starts_with(&Format::Octal.prefix_str()) {
-        let s = match data_as_text.strip_prefix(&Format::Octal.prefix_str()) {
-            Some(sr) => sr,
-            None => &data_as_text,
-        };
-        match T::from_str_radix(s, 8) {
-            Ok(r) => Ok(r),
-            Err(e) => {
-                let e = format!("{e}");
-                Err(anyhow!(e))
-            }
-        }
-    } else if data_as_text.starts_with(&Format::Bin.prefix_str()) {
-        let s = match data_as_text.strip_prefix(&Format::Bin.prefix_str()) {
-            Some(sr) => sr,
-            None => &data_as_text,
-        };
-        match T::from_str_radix(s, 2) {
-            Ok(r) => Ok(r),
-            Err(e) => {
-                let e = format!("{e}");
-                Err(anyhow!(e))
-            }
-        }
-    } else if data_as_text.starts_with(&Format::Base64.prefix_str()) {
-        let s = match data_as_text.strip_prefix(&Format::Base64.prefix_str()) {
-            Some(sr) => sr,
-            None => &data_as_text,
-        };
-        match fast32::base64::RFC4648.decode_str(s) {
-            Ok(r) => Ok(array_to_unsigned::<T>(&r)?),
-            Err(e) => {
-                let e = format!("{e}");
-                Err(anyhow!(e))
-            }
-        }
-    } else if data_as_text.starts_with(&Format::Base32.prefix_str()) {
-        let s = match data_as_text.strip_prefix(&Format::Base32.prefix_str()) {
-            Some(sr) => sr,
-            None => &data_as_text,
-        };
-        match fast32::base32::RFC4648.decode_str(s) {
-            Ok(r) => Ok(array_to_unsigned::<T>(&r)?),
-            Err(e) => {
-                let e = format!("{e}");
-                Err(anyhow!(e))
-            }
-        }
-    } else {
-        // what could go wrong with interpreting everything else as raw number input
-        let s: Vec<u8> = if data.len() > 2 && data[0] == 0x00 {
-            data.iter().skip(1).map(ToOwned::to_owned).collect()
-        } else {
-            data.as_ref().to_vec()
-        };
-        Ok(array_to_unsigned(&s)?)
+        numf_parser(s.as_bytes())
     }
-}
+);
+
+UseManyTraitsForGenericUnsignedInt!(
+    /// Converts any data (as bytes) into an unsigned integer value `T` (like [u128]), according to one of the [Formats](Format)
+    ///
+    /// If you only want to parse text data, use [numf_parser_str] instead.
+    ///
+    /// The parser will first try to convert the data to a [String].
+    ///
+    /// Then, the number is assumed to be base-10 by default, it is parsed as a different
+    /// [Format] if the number is prefixed with the [prefix](FormatOptions::prefix),
+    /// for that [Format]. So if the user inputs `0b1100` then this is parsed as
+    /// [Binary](Format::Bin) and so on.
+    ///
+    /// If none of the text [Formats](Format) matches, the data will be assumed to be raw and converted
+    /// to the ingeger type directly.
+    ///
+    /// Note: Underscores will be completely ignored, as they are assumed to just be there for
+    /// readability.
+    ///
+    /// # Errors
+    ///
+    /// If no text [Format] matches and the data is too long for the integer `T`.
+    ///
+    /// # Returns
+    ///
+    /// This parser will only output unsigned integers, it cannot be used with signed integers.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use numf::format::numf_parser;
+    ///
+    /// let data = &[0x15, 0x92, 0xff];
+    /// let result: u64 = 0x1592ff;
+    /// assert_eq!(result, numf_parser(data).unwrap());
+    ///
+    /// let data = b"0x1337";
+    /// let result: u64 = 0x1337;
+    /// assert_eq!(result, numf_parser(data).unwrap());
+    ///
+    /// let data = b"0b110011";
+    /// let result: u64 = 0b110011;
+    /// assert_eq!(result, numf_parser(data).unwrap());
+    /// ```
+    pub fn numf_parser<T>(data: &[u8]) -> anyhow::Result<T>
+    where
+        T: SO_MANY_TRAITS_FROM_MACRO,
+    {
+        let data_as_text = String::from_utf8_lossy(data).to_string().replace("_", "");
+
+        if data_as_text.starts_with(&Format::Dec.prefix_str()) || data_as_text.parse::<T>().is_ok()
+        {
+            let s = match data_as_text.strip_prefix(&Format::Dec.prefix_str()) {
+                Some(sr) => sr,
+                None => &data_as_text,
+            };
+            match s.parse() {
+                Ok(r) => Ok(r),
+                Err(e) => {
+                    let e = format!("{e}");
+                    Err(anyhow!(e))
+                }
+            }
+        } else if data_as_text.starts_with(&Format::DecSigned(0).prefix_str())
+            || data_as_text.parse::<i128>().is_ok()
+        {
+            let s = match data_as_text.strip_prefix(&Format::DecSigned(0).prefix_str()) {
+                Some(sr) => sr,
+                None => &data_as_text,
+            };
+            match s.parse::<T>() {
+                Ok(r) => {
+                    // TODO: But the integer is actually negative!
+
+                    todo!("Convert {r} to an i(BITS) and then to the required type")
+                }
+                Err(e) => {
+                    let e = format!("{e}");
+                    Err(anyhow!(e))
+                }
+            }
+        } else if data_as_text.starts_with(&Format::Hex.prefix_str()) {
+            let s = match data_as_text.strip_prefix(&Format::Hex.prefix_str()) {
+                Some(sr) => sr,
+                None => &data_as_text,
+            };
+            match T::from_str_radix(s, 16) {
+                Ok(r) => Ok(r),
+                Err(e) => {
+                    let e = format!("{e}");
+                    Err(anyhow!(e))
+                }
+            }
+        } else if data_as_text.starts_with(&Format::Octal.prefix_str()) {
+            let s = match data_as_text.strip_prefix(&Format::Octal.prefix_str()) {
+                Some(sr) => sr,
+                None => &data_as_text,
+            };
+            match T::from_str_radix(s, 8) {
+                Ok(r) => Ok(r),
+                Err(e) => {
+                    let e = format!("{e}");
+                    Err(anyhow!(e))
+                }
+            }
+        } else if data_as_text.starts_with(&Format::Bin.prefix_str()) {
+            let s = match data_as_text.strip_prefix(&Format::Bin.prefix_str()) {
+                Some(sr) => sr,
+                None => &data_as_text,
+            };
+            match T::from_str_radix(s, 2) {
+                Ok(r) => Ok(r),
+                Err(e) => {
+                    let e = format!("{e}");
+                    Err(anyhow!(e))
+                }
+            }
+        } else if data_as_text.starts_with(&Format::Base64.prefix_str()) {
+            let s = match data_as_text.strip_prefix(&Format::Base64.prefix_str()) {
+                Some(sr) => sr,
+                None => &data_as_text,
+            };
+            match fast32::base64::RFC4648.decode_str(s) {
+                Ok(r) => Ok(array_to_unsigned::<T>(&r)?),
+                Err(e) => {
+                    let e = format!("{e}");
+                    Err(anyhow!(e))
+                }
+            }
+        } else if data_as_text.starts_with(&Format::Base32.prefix_str()) {
+            let s = match data_as_text.strip_prefix(&Format::Base32.prefix_str()) {
+                Some(sr) => sr,
+                None => &data_as_text,
+            };
+            match fast32::base32::RFC4648.decode_str(s) {
+                Ok(r) => Ok(array_to_unsigned::<T>(&r)?),
+                Err(e) => {
+                    let e = format!("{e}");
+                    Err(anyhow!(e))
+                }
+            }
+        } else {
+            // what could go wrong with interpreting everything else as raw number input
+            let s: Vec<u8> = if data.len() > 2 && data[0] == 0x00 {
+                data.iter().skip(1).map(ToOwned::to_owned).collect()
+            } else {
+                data.as_ref().to_vec()
+            };
+            Ok(array_to_unsigned(&s)?)
+        }
+    }
+);

@@ -44,6 +44,15 @@ fn format() {
 
     assert_eq!(Format::Raw.format(0x1337, &options), vec![0x13, 0x37]);
     assert_eq!(Format::Raw.format(0x0, &options), vec![0x0]);
+
+    assert_eq!(
+        Format::DecSigned(16 /* 16 bit integer */).format_str(0xffff, &options),
+        "-1"
+    );
+    assert_eq!(
+        Format::DecSigned(16 /* 16 bit integer */).format_str(0xfffe, &options),
+        "-2"
+    );
 }
 
 #[test]
@@ -260,6 +269,15 @@ fn parser_b32() {
 #[test]
 fn parser_raw() {
     assert_eq!(numf_parser_str::<u32>("\x00\x50\x60").unwrap(), 0x5060);
+}
+
+#[test]
+fn parser_dec_signed() {
+    assert_eq!(numf_parser_str::<u16>("-1").unwrap(), 0xffff);
+    assert_eq!(numf_parser_str::<u16>("-2").unwrap(), 0xfffe);
+    assert_eq!(numf_parser_str::<u16>("-0d2").unwrap(), 0xfffe);
+    assert_eq!(numf_parser_str::<u16>("-0d1").unwrap(), 0xffff);
+    assert_eq!(numf_parser_str::<u16>("2").unwrap(), 2);
 }
 
 #[test]

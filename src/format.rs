@@ -212,6 +212,7 @@ impl FormatOptions {
     }
 
     /// set the format manually
+    #[allow(dead_code)] // public API
     pub fn set_format(&mut self, format: Format) {
         self.bin = false;
         self.oct = false;
@@ -237,11 +238,13 @@ impl FormatOptions {
     }
 
     /// set numbers manually
+    #[allow(dead_code)] // public API
     pub fn set_numbers(&mut self, numbers: Vec<NumberType>) {
         self.numbers = numbers;
     }
 
     /// set padding manually
+    #[allow(dead_code)] // public API
     pub fn set_padding(&mut self, value: bool) {
         self.padding = value
     }
@@ -257,6 +260,7 @@ impl FormatOptions {
     }
 
     /// set prefix manually
+    #[allow(dead_code)] // public API
     pub fn set_prefix(&mut self, value: bool) {
         self.prefix = value;
     }
@@ -272,6 +276,7 @@ impl FormatOptions {
     }
 
     /// set amount of extra random numbers manually
+    #[allow(dead_code)] // public API
     pub fn set_rand(&mut self, rand: NumberType) {
         self.rand = rand;
     }
@@ -282,6 +287,7 @@ impl FormatOptions {
     }
 
     /// set highes allowed random value
+    #[allow(dead_code)] // public API
     pub fn set_rand_max(&mut self, rand_max: NumberType) {
         self.rand_max = rand_max;
     }
@@ -380,6 +386,7 @@ impl Format {
     /// assert_eq!(Format::Base64.format_str(256, &options), "0sAQA=");
     ///
     /// ```
+    #[allow(dead_code)] // public API
     pub fn format_str(&self, num: NumberType, options: &FormatOptions) -> String {
         String::from_utf8_lossy(&self.format(num, options)).to_string()
     }

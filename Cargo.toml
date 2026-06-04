@@ -7,8 +7,7 @@ authors = ["Christoph J. Scherr <software@cscherr.de>"]
 license = "MIT"
 description = "Convert numbes between formats"
 readme = "README.md"
-homepage = "https://git.cscherr.de/PlexSheep/numf"
-repository = "https://git.cscherr.de/PlexSheep/numf"
+repository = "https://github.com/PlexSheep/numf"
 keywords = ["cli", "formatting"]
 categories = ["command-line-utilities", "encoding"]
 

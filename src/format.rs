@@ -39,7 +39,7 @@ use clap::{ArgGroup, Parser};
 use clap_verbosity_flag::Verbosity;
 use log::{debug, trace};
 
-use crate::bintols::{array_to_unsigned, signed_to_absolute, unsigned_to_vec};
+use crate::bintols::{array_to_unsigned, signed_to_abs, unsigned_to_vec};
 
 /// The number type [numf](crate) uses
 pub type NumberType = u128;
@@ -460,7 +460,7 @@ impl Format {
             Format::Dec => buf.append(&mut format!("{num}").as_bytes().to_owned()),
             Format::DecSigned(bl) => {
                 trace!("input   {num:#018x}");
-                let res: u128 = signed_to_absolute(num, *bl)?;
+                let res: u128 = signed_to_abs(num, *bl)?;
                 trace!("twos    {res:#018x}");
 
                 buf.append(&mut format!("-{res}").as_bytes().to_owned());

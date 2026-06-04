@@ -78,33 +78,22 @@ where
     buf
 }
 
-pub fn highest_set_bit_pos(mut num: u128) -> u8 {
-    let mut b = 0;
-    while num > 1 {
-        num >>= 1;
-        b += 1;
-    }
-    b
-}
-
-pub fn signed_to_absolute(mut num: u128, bl: u8) -> anyhow::Result<u128> {
-    if num >> (bl - 1) > 1 {
-        let err = anyhow!("input number {num} is too large to fit into an {bl} bit signed integer");
+// this can probably be implemented less complicated, but the limiting thing is that we support
+// an arbitrary bit size for the signed integer. u128 is just the data container. Not all data in
+// u128 fits into a signed `bl` bit integer, so it needs to return a result.
+pub fn signed_to_abs(mut num: u128, bl: u8) -> anyhow::Result<u128> {
+    if num >= (1 << (bl)) {
+        let err = anyhow!("input number {num} is too large to fit into a {bl} bit signed integer");
         return Err(err);
     }
-
-    let mask = (1 << (bl)) - 1;
-    debug!("num (unsigned): {num:#x}");
-    trace!("bl: {bl}");
-    trace!("mask: {mask:#x}");
-
-    num &= mask;
-    trace!("num (trunc): {num:#x}");
 
     if num >> (bl - 1) == 0 {
         // sign bit is not set
         Ok(num)
     } else {
+        let mask = (1 << (bl)) - 1;
+        debug!("num (unsigned): {num:#x}");
+        debug!("mask: {mask:#x}");
         // sign bit is set
         num ^= mask;
         trace!("num (flip): {num:#x}");
@@ -117,25 +106,67 @@ pub fn signed_to_absolute(mut num: u128, bl: u8) -> anyhow::Result<u128> {
     }
 }
 
+pub fn absolute_to_negative_signed_abs(mut num: u128, bl: u8) -> anyhow::Result<u128> {
+    let mask = (1 << (bl)) - 1;
+
+    if num >= (1 << (bl - 1)) {
+        let err = anyhow!("input number {num} is too large to fit into the negative area of a {bl} bit signed integer");
+        return Err(err);
+    }
+
+    dbg!(format!("{num:05b}"));
+    num ^= mask;
+    dbg!(format!("{num:05b}"));
+    num += 1;
+    dbg!(format!("{num:05b}"));
+    dbg!(format!("{num:02x}"));
+    Ok(num)
+}
+
 #[cfg(test)]
 mod test {
+    use assert_hex::assert_eq_hex;
+
     use super::*;
 
     #[test]
-    fn test_bintols_highest_set_bit_pos() {
-        assert_eq!(highest_set_bit_pos(0b1_0000), 4);
-        assert_eq!(highest_set_bit_pos(0b10_0000), 5);
-        assert_eq!(highest_set_bit_pos(0b11_1111), 5);
-        assert_eq!(highest_set_bit_pos(0b1_1111), 4);
-    }
-
-    #[test]
     fn test_signed_to_absolute() {
-        assert_eq!(signed_to_absolute(0b1111_1111, 8).unwrap(), 1);
-        assert_eq!(signed_to_absolute(0b1111_1110, 8).unwrap(), 2);
-        assert_eq!(signed_to_absolute(0b1_1111, 5).unwrap(), 1);
-        assert_eq!(signed_to_absolute(0b1_0000, 5).unwrap(), 16);
-        assert_eq!(signed_to_absolute(0b0_0000, 5).unwrap(), 0);
-        assert_eq!(signed_to_absolute(0b0_1111, 5).unwrap(), 15);
+        signed_to_abs(0b10_0000, 5).unwrap_err();
+
+        assert_eq_hex!(signed_to_abs(0b1111_1111, 8).unwrap(), 1);
+        assert_eq_hex!(signed_to_abs(0b1111_1110, 8).unwrap(), 2);
+        assert_eq_hex!(signed_to_abs(0b1_1111, 5).unwrap(), 1);
+        assert_eq_hex!(signed_to_abs(0b1_0000, 5).unwrap(), 16);
+        assert_eq_hex!(signed_to_abs(0b0_0000, 5).unwrap(), 0);
+        assert_eq_hex!(signed_to_abs(0b0_1111, 5).unwrap(), 15);
+
+        assert_eq_hex!(signed_to_abs(-18i32 as u32 as u128, 32).unwrap(), 18);
+        assert_eq_hex!(
+            signed_to_abs(-181001i32 as u32 as u128, 32).unwrap(),
+            181001
+        );
+    }
+    #[test]
+    fn test_absolute_to_negative_signed() {
+        absolute_to_negative_signed_abs(0b1_1111, 5).unwrap_err();
+        absolute_to_negative_signed_abs(0b1_0000, 5).unwrap_err();
+
+        assert_eq_hex!(absolute_to_negative_signed_abs(1, 5).unwrap(), 0b1_1111);
+        assert_eq_hex!(
+            absolute_to_negative_signed_abs(0b0_0110, 5).unwrap(),
+            0b1_1010
+        );
+        assert_eq_hex!(
+            absolute_to_negative_signed_abs(0b0_0111, 5).unwrap(),
+            0b1_1001
+        );
+        assert_eq_hex!(
+            absolute_to_negative_signed_abs(18, 32).unwrap(),
+            -18i32 as u32 as u128
+        );
+        assert_eq_hex!(
+            absolute_to_negative_signed_abs(13277, 32).unwrap(),
+            -13277i32 as u32 as u128
+        );
     }
 }

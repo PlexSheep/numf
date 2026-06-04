@@ -117,7 +117,7 @@ pub struct FormatOptions {
     /// add a prefix (like "0x" for hex)
     prefix: bool,
     #[arg(short = 'P', long)]
-    /// add a padding to make the number at least one byte long
+    /// add a padding to make each part of the number at least one byte long
     ///
     /// For example, `0b1100` will be `0b00001100` with this.
     /// This does not apply to all formats, only hexadecimal and binary.

@@ -53,6 +53,10 @@ fn format() {
         Format::DecSigned(16 /* 16 bit integer */).format_str(0xfffe, &options),
         "-2"
     );
+    assert_eq!(
+        Format::DecSigned(4 /* 4 bit integer */).format_str(0xf, &options),
+        "-8"
+    );
 }
 
 #[test]

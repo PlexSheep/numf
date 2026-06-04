@@ -77,3 +77,13 @@ where
     buf.reverse();
     buf
 }
+
+pub fn to_twos_complement(mut num: u128, bl: u8) -> u128 {
+    let mask = (1 << (bl)) - 1;
+    num &= mask;
+    if num >> bl == 1 {
+        panic!("num already has the sign bit set");
+    }
+    num ^= mask;
+    num + 1
+}

@@ -39,7 +39,7 @@ use clap::{ArgGroup, Parser};
 use clap_verbosity_flag::Verbosity;
 use log::{debug, trace};
 
-use crate::bintols::{array_to_unsigned, unsigned_to_vec};
+use crate::bintols::{array_to_unsigned, to_twos_complement, unsigned_to_vec};
 
 /// The number type [numf](crate) uses
 pub type NumberType = u128;
@@ -458,14 +458,13 @@ impl Format {
             }
             Format::Octal => buf.append(&mut format!("{num:o}").as_bytes().to_owned()),
             Format::Dec => buf.append(&mut format!("{num}").as_bytes().to_owned()),
-            Format::DecSigned(bl) => buf.append(
-                &mut format!(
-                    "{}",
-                    todo!("use the bit length to format the data of the u128")
-                )
-                .as_bytes()
-                .to_owned(),
-            ),
+            Format::DecSigned(bl) => {
+                debug!("input   {num:#018x}");
+                let res: u128 = to_twos_complement(num, *bl);
+                debug!("twos    {res:#018x}");
+
+                buf.append(&mut format!("-{res}").as_bytes().to_owned());
+            }
             Format::Base64 => buf.append(
                 &mut fast32::base64::RFC4648
                     .encode(&unsigned_to_vec(num))

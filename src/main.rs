@@ -6,6 +6,7 @@ use numf::format::numf_parser_str;
 
 mod bintols;
 mod format;
+mod input;
 mod macros;
 
 use crate::format::{numf_parser, Format};
@@ -43,7 +44,7 @@ fn main() -> anyhow::Result<()> {
                                 exit(2);
                             }
                         };
-                        options.push_number(number);
+                        options.push_input(number);
                         String::new()
                     }
                 };
@@ -57,7 +58,7 @@ fn main() -> anyhow::Result<()> {
                             exit(2);
                         }
                     };
-                    options.push_number(number)
+                    options.push_input(number)
                 }
             }
             Err(e) => {
@@ -73,12 +74,12 @@ fn main() -> anyhow::Result<()> {
         use rand::prelude::*;
         let mut rand = rand::rngs::OsRng;
         for _i in 0..options.rand() {
-            options.push_number(rand.gen_range(0..options.rand_max()));
+            options.push_raw_number(rand.gen_range(0..options.rand_max()).to_string());
         }
     }
 
     // exit with error if no numbers are to be formatted
-    if options.numbers().is_empty() {
+    if options.raw_numbers().is_empty() {
         eprintln!("{}", FormatOptions::command().render_usage());
         error!("no numbers have been provided");
         exit(1);
@@ -86,7 +87,7 @@ fn main() -> anyhow::Result<()> {
 
     let mut out: Vec<Vec<u8>> = Vec::new();
 
-    for num in options.numbers() {
+    for num in options.raw_numbers() {
         match options.format().format(*num, &options) {
             Ok(v) => out.push(v),
             Err(e) => error!("{e}"),

@@ -13,34 +13,35 @@
 //! options.set_prefix(true);
 //! options.set_padding(true);
 //!
-//! assert_eq!(Format::Hex.format_str(0x1337, &options), "0x1337");
-//! assert_eq!(Format::Base32.format_str(0x41414242, &options), "032sIFAUEQQ=");
-//! assert_eq!(Format::Base64.format_str(0x41414242, &options), "0sQUFCQg==");
+//! assert_eq!(Format::Hex.format_str(0x1337, &options).unwrap(), "0x1337");
+//! assert_eq!(Format::Base32.format_str(0x41414242, &options).unwrap(), "032sIFAUEQQ=");
+//! assert_eq!(Format::Base64.format_str(0x41414242, &options).unwrap(), "0sQUFCQg==");
 //! // sometimes you might need the raw bytes instead of a String
-//! assert_eq!(Format::Raw.format(0x1337, &options), vec![0x00, 0x13, 0x37]);
-//! assert_eq!(Format::Hex.format(0x1337, &options), vec![48, 120, 49, 51, 51, 55]);
+//! assert_eq!(Format::Raw.format(0x1337, &options).unwrap(), vec![0x00, 0x13, 0x37]);
+//! assert_eq!(Format::Hex.format(0x1337, &options).unwrap(), vec![48, 120, 49, 51, 51, 55]);
 //!
 //! options.set_prefix(false);
 //! options.set_padding(false);
 //!
-//! assert_eq!(Format::Hex.format_str(0x1337, &options), "1337");
-//! assert_eq!(Format::Base32.format_str(0x41414242, &options), "IFAUEQQ=");
-//! assert_eq!(Format::Base64.format_str(0x41414242, &options), "QUFCQg==");
+//! assert_eq!(Format::Hex.format_str(0x1337, &options).unwrap(), "1337");
+//! assert_eq!(Format::Base32.format_str(0x41414242, &options).unwrap(), "IFAUEQQ=");
+//! assert_eq!(Format::Base64.format_str(0x41414242, &options).unwrap(), "QUFCQg==");
 //!
-//! assert_eq!(Format::Raw.format(0x1337, &options), vec![0x13, 0x37]);
-//! assert_eq!(Format::Hex.format(0x1337, &options), vec![49, 51, 51, 55]);
+//! assert_eq!(Format::Raw.format(0x1337, &options).unwrap(), vec![0x13, 0x37]);
+//! assert_eq!(Format::Hex.format(0x1337, &options).unwrap(), vec![49, 51, 51, 55]);
 //! ```
 
 use std::fmt::Display;
 
 // this is exported to lib.rs
 use anyhow::anyhow;
-use clap::{ArgGroup, Parser};
+use clap::{ArgGroup, Parser, ValueEnum};
 use clap_verbosity_flag::Verbosity;
 use log::{debug, trace};
 
 use crate::{
     bintols::{absolute_to_negative_signed_abs, array_to_unsigned, signed_to_abs, unsigned_to_vec},
+    input::Input,
     macros::UseManyTraitsForGenericUnsignedInt,
 };
 
@@ -93,16 +94,16 @@ impl Display for Format {
 /// use numf::format::{Format, FormatOptions};
 /// let mut options = FormatOptions::default();
 ///
-/// assert_eq!(Format::Bin.format_str(256, &options), "100000000");
-/// assert_eq!(Format::Hex.format_str(256, &options), "100");
-/// assert_eq!(Format::Base64.format_str(256, &options), "AQA=");
+/// assert_eq!(Format::Bin.format_str(256, &options).unwrap(), "100000000");
+/// assert_eq!(Format::Hex.format_str(256, &options).unwrap(), "100");
+/// assert_eq!(Format::Base64.format_str(256, &options).unwrap(), "AQA=");
 ///
 /// options.set_prefix(true);
 /// options.set_padding(true);
 ///
-/// assert_eq!(Format::Bin.format_str(256, &options), "0b0000000100000000");
-/// assert_eq!(Format::Hex.format_str(256, &options), "0x0100");
-/// assert_eq!(Format::Base64.format_str(256, &options), "0sAQA=");
+/// assert_eq!(Format::Bin.format_str(256, &options).unwrap(), "0b0000000100000000");
+/// assert_eq!(Format::Hex.format_str(256, &options).unwrap(), "0x0100");
+/// assert_eq!(Format::Base64.format_str(256, &options).unwrap(), "0sAQA=");
 ///
 /// ```
 #[derive(Parser, Debug, Clone, PartialEq, Eq)]
@@ -166,28 +167,30 @@ pub struct FormatOptions {
     /// Any of the [Formats](Format::format) are supported, but the prefixes are needed for formats
     /// other than decimal.
     ///
-    /// Formats: Decimal, Hexadecimal, Binary, Octal, Base64, Base32, Raw data
+    /// Formats: Decimal, Negative Signed Decimal, Hexadecimal, Binary, Octal, Base64, Base32, Raw data
     ///
     /// Underscores will be completely ignored and are allowed for readability.
     ///
-    /// Format Prefixes:
+    /// Format:
     ///
-    /// * '0d' - Decimal, assumed for numeric values by default
+    /// * '0d19' - Decimal, assumed for numeric values by default
     ///
-    /// * '0x' - Hexadecimal
+    /// * '-0d19#16' - Negative Signed Decimal in the context of a 16 bit integer (any bit length is allowed)
     ///
-    /// * '0b' - Binary
+    /// * '0x13' - Hexadecimal
     ///
-    /// * '0o' - Octal
+    /// * '0b10011' - Binary
     ///
-    /// * '0s' - Base64
+    /// * '0o23' - Octal
     ///
-    /// * '032s' - Base32
+    /// * '0sEw==' - Base64
+    ///
+    /// * '032sCM======' - Base32
     ///
     /// * If no format can be determined, the data will be assumed to be raw bytes.
     ///
     /// The numbers may be left empty at first, if numbers are provided from the stdin.
-    numbers: Vec<NumberType>,
+    inputs: Vec<Input<NumberType>>,
 
     #[command(flatten)]
     pub(crate) verbosity: Verbosity,
@@ -244,14 +247,14 @@ impl FormatOptions {
     }
 
     /// get numbers
-    pub fn numbers(&self) -> &[u128] {
-        self.numbers.as_ref()
+    pub fn inputs(&self) -> &[Input<NumberType>] {
+        self.inputs.as_ref()
     }
 
     /// set numbers manually
     #[allow(dead_code)] // public API
-    pub fn set_numbers(&mut self, numbers: Vec<NumberType>) {
-        self.numbers = numbers;
+    pub fn set_inputs(&mut self, inputs: Vec<Input<NumberType>>) {
+        self.inputs = inputs;
     }
 
     /// set padding manually
@@ -277,8 +280,8 @@ impl FormatOptions {
     }
 
     /// manually add a number
-    pub fn push_number(&mut self, value: NumberType) {
-        self.numbers.push(value)
+    pub fn push_input(&mut self, input: Input<NumberType>) {
+        self.inputs.push(input)
     }
 
     /// get rand
@@ -317,7 +320,7 @@ impl Default for FormatOptions {
             base64: false,
             dec: false,
             dec_signed: None,
-            numbers: vec![],
+            inputs: vec![],
             rand: 0,
             rand_max: NumberType::MAX,
             verbosity: Verbosity::default(),
@@ -377,6 +380,7 @@ impl Format {
             Format::Base32 => b"032s".to_vec(),
         }
     }
+
     /// format a number with a [Format] and [FormatOptions] to a [String]
     ///
     /// If you need raw byte outputs, use [Format::format] instead.
@@ -387,16 +391,16 @@ impl Format {
     /// use numf::format::{Format, FormatOptions};
     /// let mut options = FormatOptions::default();
     ///
-    /// assert_eq!(Format::Bin.format_str(256, &options), "100000000");
-    /// assert_eq!(Format::Hex.format_str(256, &options), "100");
-    /// assert_eq!(Format::Base64.format_str(256, &options), "AQA=");
+    /// assert_eq!(Format::Bin.format_str(256, &options).unwrap(), "100000000");
+    /// assert_eq!(Format::Hex.format_str(256, &options).unwrap(), "100");
+    /// assert_eq!(Format::Base64.format_str(256, &options).unwrap(), "AQA=");
     ///
     /// options.set_prefix(true);
     /// options.set_padding(true);
     ///
-    /// assert_eq!(Format::Bin.format_str(256, &options), "0b0000000100000000");
-    /// assert_eq!(Format::Hex.format_str(256, &options), "0x0100");
-    /// assert_eq!(Format::Base64.format_str(256, &options), "0sAQA=");
+    /// assert_eq!(Format::Bin.format_str(256, &options).unwrap(), "0b0000000100000000");
+    /// assert_eq!(Format::Hex.format_str(256, &options).unwrap(), "0x0100");
+    /// assert_eq!(Format::Base64.format_str(256, &options).unwrap(), "0sAQA=");
     ///
     /// ```
     #[allow(dead_code)] // public API
@@ -414,22 +418,22 @@ impl Format {
     /// use numf::format::{Format, FormatOptions};
     /// let mut options = FormatOptions::default();
     ///
-    /// assert_eq!(Format::Bin.format(256, &options), b"100000000");
-    /// assert_eq!(Format::Hex.format(256, &options), b"100");
-    /// assert_eq!(Format::Hex.format(256, &options), [49, 48, 48]);
-    /// assert_eq!(Format::Base64.format(256, &options), b"AQA=");
-    /// assert_eq!(Format::Raw.format(256, &options), [1, 0]);
+    /// assert_eq!(Format::Bin.format(256, &options).unwrap(), b"100000000");
+    /// assert_eq!(Format::Hex.format(256, &options).unwrap(), b"100");
+    /// assert_eq!(Format::Hex.format(256, &options).unwrap(), [49, 48, 48]);
+    /// assert_eq!(Format::Base64.format(256, &options).unwrap(), b"AQA=");
+    /// assert_eq!(Format::Raw.format(256, &options).unwrap(), [1, 0]);
     ///
     /// options.set_prefix(true);
     /// options.set_padding(true);
     ///
-    /// assert_eq!(Format::Bin.format(256, &options), b"0b0000000100000000");
-    /// assert_eq!(Format::Hex.format(256, &options), b"0x0100");
-    /// assert_eq!(Format::Hex.format(256, &options), [48, 120, 48, 49, 48, 48]);
-    /// assert_eq!(Format::Base64.format(256, &options), b"0sAQA=");
-    /// assert_eq!(Format::Raw.format(256, &options), [0, 1, 0]);
-    /// assert_eq!(Format::Raw.format(255, &options), [0, 255]);
-    /// assert_eq!(Format::Raw.format(32000, &options), [0, 125, 0]);
+    /// assert_eq!(Format::Bin.format(256, &options).unwrap(), b"0b0000000100000000");
+    /// assert_eq!(Format::Hex.format(256, &options).unwrap(), b"0x0100");
+    /// assert_eq!(Format::Hex.format(256, &options).unwrap(), [48, 120, 48, 49, 48, 48]);
+    /// assert_eq!(Format::Base64.format(256, &options).unwrap(), b"0sAQA=");
+    /// assert_eq!(Format::Raw.format(256, &options).unwrap(), [0, 1, 0]);
+    /// assert_eq!(Format::Raw.format(255, &options).unwrap(), [0, 255]);
+    /// assert_eq!(Format::Raw.format(32000, &options).unwrap(), [0, 125, 0]);
     ///
     /// ```
     pub fn format(&self, num: NumberType, options: &FormatOptions) -> anyhow::Result<Vec<u8>> {
@@ -573,8 +577,33 @@ UseManyTraitsForGenericUnsignedInt!(
         T: SO_MANY_TRAITS_FROM_MACRO,
     {
         let data_as_text = String::from_utf8_lossy(data).to_string().replace("_", "");
+        dbg!(&data_as_text);
 
-        if data_as_text.starts_with(&Format::Dec.prefix_str()) || data_as_text.parse::<T>().is_ok()
+        // NOTE: this parses stuff in a special way, so its important that this is the first check
+        if data_as_text.starts_with(&Format::DecSigned(0).prefix_str())
+            || (data_as_text.contains("#"))
+        {
+            let (s, bl) = if let Some((s, suffix)) = data_as_text.split_once("#") {
+                (s, suffix.parse::<u8>()?)
+            } else {
+                return Err(anyhow!("Input of negative decimals requires a suffix that tells the program the bit size.
+                        For example, if your input is the 64 bit integer 19, input '19#64', and so on."));
+            };
+
+            let s = match s.strip_prefix(&Format::DecSigned(bl).prefix_str()) {
+                Some(sr) => sr,
+                None => s.strip_prefix("-").unwrap(),
+            };
+
+            match s.parse::<T>() {
+                Ok(r) => absolute_to_negative_signed_abs(r, bl),
+                Err(e) => {
+                    let e = format!("{e}");
+                    Err(anyhow!(e))
+                }
+            }
+        } else if data_as_text.starts_with(&Format::Dec.prefix_str())
+            || data_as_text.parse::<T>().is_ok()
         {
             let s = match data_as_text.strip_prefix(&Format::Dec.prefix_str()) {
                 Some(sr) => sr,
@@ -587,31 +616,6 @@ UseManyTraitsForGenericUnsignedInt!(
                     Err(anyhow!(e))
                 }
             }
-        } else if false
-        // NOTE: parsing negative values as input is currently not supported due to
-        // software architecture reasons. Sorry.
-        //
-        /*|| data_as_text.starts_with(&Format::DecSigned(0).prefix_str())
-        || data_as_text.parse::<i128>().is_ok() */
-        {
-            // let s = match data_as_text.strip_prefix(&Format::DecSigned(0).prefix_str()) {
-            //     Some(sr) => sr,
-            //     None => &data_as_text,
-            // };
-            // match s.parse::<T>() {
-            //     Ok(r) => {
-            //         // NOTE: The integer is actually negative!
-            //         // TODO: How do we determine the target integer size? This is important for this
-            //         // operation.
-            //
-            //         absolute_to_negative_signed_abs(r, 16 /* arbitrary */)
-            //     }
-            //     Err(e) => {
-            //         let e = format!("{e}");
-            //         Err(anyhow!(e))
-            //     }
-            // }
-            unreachable!()
         } else if data_as_text.starts_with(&Format::Hex.prefix_str()) {
             let s = match data_as_text.strip_prefix(&Format::Hex.prefix_str()) {
                 Some(sr) => sr,

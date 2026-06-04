@@ -362,11 +362,13 @@ fn test_parser_raw() {
 
 #[test]
 fn test_parser_dec_signed() {
-    assert_eq_hex!(numf_parser_str::<u16>("-1").unwrap(), 0xffff);
-    assert_eq_hex!(numf_parser_str::<u16>("-2").unwrap(), 0xfffe);
-    assert_eq_hex!(numf_parser_str::<u16>("-0d2").unwrap(), 0xfffe);
-    assert_eq_hex!(numf_parser_str::<u16>("-0d1").unwrap(), 0xffff);
-    assert_eq_hex!(numf_parser_str::<u16>("2").unwrap(), 2);
+    assert_eq_hex!(numf_parser_str::<u16>("-1#16").unwrap(), 0xffff);
+    assert_eq_hex!(numf_parser_str::<u16>("-2#16").unwrap(), 0xfffe);
+    assert_eq_hex!(numf_parser_str::<u16>("-0d2#16").unwrap(), 0xfffe);
+    assert_eq_hex!(numf_parser_str::<u16>("-0d1#16").unwrap(), 0xffff);
+
+    assert_eq_hex!(numf_parser_str::<u16>("2").unwrap(), 2); // not dec signed, just a regular
+                                                             // decimal
 }
 
 #[test]

@@ -18,5 +18,6 @@
 
 pub mod bintols;
 pub mod format;
+pub mod input;
 
 mod macros;

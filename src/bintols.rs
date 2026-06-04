@@ -15,7 +15,7 @@ UseManyTraitsForGenericUnsignedInt!(
     /// # Examples
     ///
     /// ```
-    /// # use numf::bintols::join::*;
+    /// # use numf::bintols::*;
     ///
     /// let x: [u8; 2] = [0b00000110, 0b10110101];
     ///
@@ -51,7 +51,7 @@ UseManyTraitsForGenericUnsignedInt!(
 /// # Examples
 ///
 /// ```
-/// # use numf::bintols::split::*;
+/// # use numf::bintols::*;
 ///
 /// let x: u32 = 1717;
 ///

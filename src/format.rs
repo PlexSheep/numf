@@ -43,6 +43,7 @@ use crate::bintols::{array_to_unsigned, unsigned_to_vec};
 
 /// The number type [numf](crate) uses
 pub type NumberType = u128;
+pub type NumberTypeSigned = i128;
 
 pub const HELP_TEMPLATE: &str = r"{about-section}
 {usage-heading} {usage}
@@ -61,6 +62,7 @@ Author: {author-with-newline}
 #[derive(Copy, Clone, Debug, Hash, PartialEq, Eq, Default)]
 pub enum Format {
     Dec,
+    DecSigned(u8),
     #[default]
     Hex,
     Bin,
@@ -140,6 +142,9 @@ pub struct FormatOptions {
     #[arg(short = 'a', long)]
     /// format raw, no text
     raw: bool,
+    #[arg(short = 'i', long)]
+    /// format to signed decimal integer with N bit length
+    dec_signed: Option<u8>,
     #[arg(short = 'r', long, default_value_t = 0, value_parser=numf_parser_str::<NumberType>)]
     /// output random numbers
     ///
@@ -204,6 +209,8 @@ impl FormatOptions {
             Format::Hex
         } else if self.raw {
             Format::Raw
+        } else if let Some(bl) = self.dec_signed {
+            Format::DecSigned(bl)
         } else {
             // none was explicitly selected
             debug!("no mode was explicitly selected, going with the default");
@@ -221,6 +228,7 @@ impl FormatOptions {
         self.base64 = false;
         self.raw = false;
         self.base32 = false;
+        self.dec_signed = None;
         match format {
             Format::Bin => self.bin = true,
             Format::Raw => self.raw = true,
@@ -229,6 +237,7 @@ impl FormatOptions {
             Format::Base64 => self.base64 = true,
             Format::Base32 => self.base32 = true,
             Format::Dec => self.dec = true,
+            Format::DecSigned(bl) => self.dec_signed = Some(bl),
         }
     }
 
@@ -305,6 +314,7 @@ impl Default for FormatOptions {
             base32: false,
             base64: false,
             dec: false,
+            dec_signed: None,
             numbers: vec![],
             rand: 0,
             rand_max: NumberType::MAX,
@@ -351,6 +361,7 @@ impl Format {
             // apperently used nowhere, sometimes 0 is used as a prefix but I
             // think this makes it more clear that this is decimal
             Format::Dec => b"0d".to_vec(),
+            Format::DecSigned(_) => b"-0d".to_vec(),
             Format::Raw => [0x00].to_vec(),
             // very common
             Format::Hex => b"0x".to_vec(),
@@ -447,6 +458,14 @@ impl Format {
             }
             Format::Octal => buf.append(&mut format!("{num:o}").as_bytes().to_owned()),
             Format::Dec => buf.append(&mut format!("{num}").as_bytes().to_owned()),
+            Format::DecSigned(bl) => buf.append(
+                &mut format!(
+                    "{}",
+                    todo!("use the bit length to format the data of the u128")
+                )
+                .as_bytes()
+                .to_owned(),
+            ),
             Format::Base64 => buf.append(
                 &mut fast32::base64::RFC4648
                     .encode(&unsigned_to_vec(num))
@@ -578,6 +597,24 @@ where
         };
         match s.parse() {
             Ok(r) => Ok(r),
+            Err(e) => {
+                let e = format!("{e}");
+                Err(anyhow!(e))
+            }
+        }
+    } else if data_as_text.starts_with(&Format::DecSigned(0).prefix_str())
+        || data_as_text.parse::<i128>().is_ok()
+    {
+        let s = match data_as_text.strip_prefix(&Format::DecSigned(0).prefix_str()) {
+            Some(sr) => sr,
+            None => &data_as_text,
+        };
+        match s.parse::<i128>() {
+            Ok(r) => {
+                // TODO: But the integer is actually negative!
+
+                todo!("Convert {r} to an i(BITS) and then to the required type")
+            }
             Err(e) => {
                 let e = format!("{e}");
                 Err(anyhow!(e))

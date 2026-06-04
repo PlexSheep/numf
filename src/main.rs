@@ -6,6 +6,8 @@ use numf::format::numf_parser_str;
 
 mod bintols;
 mod format;
+mod macros;
+
 use crate::format::{numf_parser, Format};
 use format::*;
 use log::{debug, error, info};

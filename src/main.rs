@@ -8,15 +8,19 @@ mod bintols;
 mod format;
 use crate::format::{numf_parser, Format};
 use format::*;
-use log::{debug, error};
+use log::{debug, error, info};
 
 fn main() -> anyhow::Result<()> {
     // try to read from stdin first, appending the numbers we read to the FormatOptions
     let mut options = FormatOptions::parse();
-    let _logger = env_logger::Builder::new()
+    env_logger::Builder::new()
         .parse_default_env() // or initialize as needed
         .filter(None, options.verbosity.log_level_filter())
-        .build();
+        .format_module_path(false)
+        .format_file(false)
+        .format_target(false)
+        .format_timestamp(None)
+        .init();
 
     debug!("logger active");
 

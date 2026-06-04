@@ -14,4 +14,5 @@
 //! * [format::Format::format]
 //! * [format::Format::format_str]
 
+pub mod bintols;
 pub mod format;

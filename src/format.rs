@@ -31,18 +31,26 @@
 //! assert_eq!(Format::Hex.format(0x1337, &options), vec![49, 51, 51, 55]);
 //! ```
 
-#![allow(dead_code)]
 use std::fmt::Display;
 
 // this is exported to lib.rs
+use crate::bintols::{join, split};
 use anyhow::anyhow;
 use clap::{ArgGroup, Parser};
-use libpt::bintols::{join, split};
-use libpt::cli::args::VerbosityLevel;
-use libpt::log::{debug, trace};
+use clap_verbosity_flag::Verbosity;
+use log::{debug, trace};
 
 /// The number type [numf](crate) uses
 pub type NumberType = u128;
+
+pub const HELP_TEMPLATE: &str = r"{about-section}
+{usage-heading} {usage}
+
+{all-args}{tab}
+
+{name}: {version}
+Author: {author-with-newline}
+";
 
 /// Describes a format for numbers
 ///
@@ -92,13 +100,13 @@ impl Display for Format {
 /// assert_eq!(Format::Base64.format_str(256, &options), "0sAQA=");
 ///
 /// ```
-#[derive(Parser, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Parser, Debug, Clone, PartialEq, Eq)]
 #[command(
     author,
     version,
     about,
     long_about,
-    help_template = libpt::cli::args::HELP_TEMPLATE)]
+    help_template = HELP_TEMPLATE)]
 #[clap(group(
             ArgGroup::new("format")
                 .args(&["hex", "bin", "oct", "dec", "base64", "base32", "raw"]),
@@ -174,7 +182,7 @@ pub struct FormatOptions {
     numbers: Vec<NumberType>,
 
     #[command(flatten)]
-    pub(crate) verbosity: VerbosityLevel,
+    pub(crate) verbosity: Verbosity,
 }
 
 impl FormatOptions {
@@ -293,7 +301,7 @@ impl Default for FormatOptions {
             numbers: vec![],
             rand: 0,
             rand_max: NumberType::MAX,
-            verbosity: VerbosityLevel::default(),
+            verbosity: Verbosity::default(),
         }
     }
 }

@@ -7,18 +7,16 @@ use numf::format::numf_parser_str;
 mod format;
 use crate::format::{numf_parser, Format};
 use format::*;
-use libpt::log::{debug, error};
+use log::{debug, error};
 
 fn main() -> anyhow::Result<()> {
     // try to read from stdin first, appending the numbers we read to the FormatOptions
     let mut options = FormatOptions::parse();
-    let _logger = libpt::log::Logger::builder()
-        .set_level(options.verbosity.level())
-        .display_time(false)
-        .build()
-        .map_err(|e| {
-            error!("could not initialize logger: {e}");
-        });
+    let _logger = env_logger::Builder::new()
+        .parse_default_env() // or initialize as needed
+        .filter(None, options.verbosity.log_level_filter())
+        .build();
+
     debug!("logger active");
 
     let mut stdin_nums = Vec::new();

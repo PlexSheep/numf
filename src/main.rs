@@ -4,6 +4,7 @@ use std::process::exit;
 use clap::{CommandFactory, Parser};
 use numf::format::numf_parser_str;
 
+mod bintols;
 mod format;
 use crate::format::{numf_parser, Format};
 use format::*;

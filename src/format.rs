@@ -587,24 +587,31 @@ UseManyTraitsForGenericUnsignedInt!(
                     Err(anyhow!(e))
                 }
             }
-        } else if data_as_text.starts_with(&Format::DecSigned(0).prefix_str())
-            || data_as_text.parse::<i128>().is_ok()
+        } else if false
+        // NOTE: parsing negative values as input is currently not supported due to
+        // software architecture reasons. Sorry.
+        //
+        /*|| data_as_text.starts_with(&Format::DecSigned(0).prefix_str())
+        || data_as_text.parse::<i128>().is_ok() */
         {
-            let s = match data_as_text.strip_prefix(&Format::DecSigned(0).prefix_str()) {
-                Some(sr) => sr,
-                None => &data_as_text,
-            };
-            match s.parse::<T>() {
-                Ok(r) => {
-                    // TODO: But the integer is actually negative!
-
-                    todo!("Convert {r} to an i(BITS) and then to the required type")
-                }
-                Err(e) => {
-                    let e = format!("{e}");
-                    Err(anyhow!(e))
-                }
-            }
+            // let s = match data_as_text.strip_prefix(&Format::DecSigned(0).prefix_str()) {
+            //     Some(sr) => sr,
+            //     None => &data_as_text,
+            // };
+            // match s.parse::<T>() {
+            //     Ok(r) => {
+            //         // NOTE: The integer is actually negative!
+            //         // TODO: How do we determine the target integer size? This is important for this
+            //         // operation.
+            //
+            //         absolute_to_negative_signed_abs(r, 16 /* arbitrary */)
+            //     }
+            //     Err(e) => {
+            //         let e = format!("{e}");
+            //         Err(anyhow!(e))
+            //     }
+            // }
+            unreachable!()
         } else if data_as_text.starts_with(&Format::Hex.prefix_str()) {
             let s = match data_as_text.strip_prefix(&Format::Hex.prefix_str()) {
                 Some(sr) => sr,

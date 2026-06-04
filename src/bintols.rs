@@ -87,26 +87,34 @@ pub fn highest_set_bit_pos(mut num: u128) -> u8 {
     b
 }
 
-pub fn from_twos_complement_to_asbolute(mut num: u128, bl: u8) -> anyhow::Result<u128> {
+pub fn signed_to_absolute(mut num: u128, bl: u8) -> anyhow::Result<u128> {
     if num >> (bl - 1) > 1 {
         let err = anyhow!("input number {num} is too large to fit into an {bl} bit signed integer");
         return Err(err);
     }
 
+    let mask = (1 << (bl)) - 1;
     debug!("num (unsigned): {num:#x}");
     trace!("bl: {bl}");
-    let mask = (1 << (bl)) - 1;
     trace!("mask: {mask:#x}");
+
     num &= mask;
     trace!("num (trunc): {num:#x}");
-    num ^= mask;
-    trace!("num (flip): {num:#x}");
-    num += 1;
-    debug!("num (signed): {num:#x} = {num:#b} = {num}");
-    let limit = 2u128.pow(bl as u32 - 1);
-    trace!("limit: {limit}");
-    assert!(num <= limit);
-    Ok(num)
+
+    if num >> (bl - 1) == 0 {
+        // sign bit is not set
+        Ok(num)
+    } else {
+        // sign bit is set
+        num ^= mask;
+        trace!("num (flip): {num:#x}");
+        num += 1;
+        debug!("num (signed): {num:#x} = {num:#b} = {num}");
+        let limit = 2u128.pow(bl as u32 - 1);
+        trace!("limit: {limit}");
+        assert!(num <= limit);
+        Ok(num)
+    }
 }
 
 #[cfg(test)]
@@ -122,10 +130,12 @@ mod test {
     }
 
     #[test]
-    fn test_to_negative_twos_complement() {
-        assert_eq!(from_twos_complement_to_asbolute(0b1111_1111, 8).unwrap(), 1);
-        assert_eq!(from_twos_complement_to_asbolute(0b1111_1110, 8).unwrap(), 2);
-        assert_eq!(from_twos_complement_to_asbolute(0b1_1111, 5).unwrap(), 1);
-        assert_eq!(from_twos_complement_to_asbolute(0b1_0000, 5).unwrap(), 16);
+    fn test_signed_to_absolute() {
+        assert_eq!(signed_to_absolute(0b1111_1111, 8).unwrap(), 1);
+        assert_eq!(signed_to_absolute(0b1111_1110, 8).unwrap(), 2);
+        assert_eq!(signed_to_absolute(0b1_1111, 5).unwrap(), 1);
+        assert_eq!(signed_to_absolute(0b1_0000, 5).unwrap(), 16);
+        assert_eq!(signed_to_absolute(0b0_0000, 5).unwrap(), 0);
+        assert_eq!(signed_to_absolute(0b0_1111, 5).unwrap(), 15);
     }
 }
